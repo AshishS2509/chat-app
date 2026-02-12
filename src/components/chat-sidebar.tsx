@@ -35,9 +35,9 @@ const ChatSidebar = () => {
   return (
     <div className="w-80 h-full flex flex-col">
       {/* Header */}
-      <div className="p-4 flex items-center justify-between bg-green-300">
+      <div className="p-4 flex items-center justify-between">
         <h1 className="text-xl font-bold">Messages</h1>
-        <button className="p-2 rounded-lg transition-colors">
+        <button className="p-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition">
           <MessageSquarePlus className="w-5 h-5" />
         </button>
       </div>
