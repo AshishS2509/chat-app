@@ -1,30 +1,14 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Send, Smile } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAppDispatch, useAppSelector } from "../store";
-import { sendMessage, updateDraft } from "../store/chat-slice";
+import { sendMessage } from "../store/chat-slice";
 
 const ChatInput = () => {
   const dispatch = useAppDispatch();
-  const { activeChatId, drafts } = useAppSelector((s) => s.chat);
+  const { activeChatId } = useAppSelector((s) => s.chat);
   const [text, setText] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    if (activeChatId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setText(drafts[activeChatId] || "");
-    }
-  }, [activeChatId, drafts]);
-
-  useEffect(() => {
-    if (activeChatId) {
-      const timeout = setTimeout(() => {
-        dispatch(updateDraft({ chatId: activeChatId, text }));
-      }, 300);
-      return () => clearTimeout(timeout);
-    }
-  }, [text, activeChatId, dispatch]);
 
   const handleSend = useCallback(() => {
     if (!text.trim() || !activeChatId) return;

@@ -1,13 +1,19 @@
 import { useAppDispatch, useAppSelector } from "../store";
-import { setActiveChat } from "../store/chat-slice";
+import { addChat, setActiveChat } from "../store/chat-slice";
 import { motion } from "framer-motion";
-import { Search, MessageSquarePlus } from "lucide-react";
+import { Search, MessageSquarePlus, EllipsisVertical, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { addUserToChat } from "../api/chat";
+import { logout as logoutApi } from "../api/auth";
+import { logout } from "../store/auth-slice";
 
 const ChatSidebar = () => {
   const dispatch = useAppDispatch();
   const { chats, activeChatId } = useAppSelector((s) => s.chat);
   const [query, setQuery] = useState("");
+  const [showMenu, setShowMenu] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [email, setEmail] = useState("");
   const [search, setSearch] = useState("");
 
   const filtered = chats.filter((c) =>
@@ -32,14 +38,54 @@ const ChatSidebar = () => {
     return () => clearTimeout(handler);
   }, [query]);
 
+  async function addToChat(email: string) {
+    if (!email.trim()) return;
+    const chat = await addUserToChat(email.trim());
+    if (chat) dispatch(addChat(chat));
+  }
+
+  function onLogout() {
+    logoutApi();
+    dispatch(logout());
+  }
+
   return (
     <div className="w-80 h-full flex flex-col">
       {/* Header */}
       <div className="p-4 flex items-center justify-between">
         <h1 className="text-xl font-bold">Messages</h1>
-        <button className="p-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition">
-          <MessageSquarePlus className="w-5 h-5" />
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowModal(true)}
+            className="p-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition"
+          >
+            <MessageSquarePlus className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            className="p-2 rounded-lg hover:bg-gray-200 text-black transition"
+          >
+            <EllipsisVertical className="w-5 h-5" />
+          </button>
+          <div className="relative">
+            {showMenu && (
+              <div
+                className="absolute right-0 top-8 mt-2 w-48 bg-white rounded-lg shadow-lg z-50"
+                onClick={() => setShowMenu(false)}
+              >
+                <button className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">
+                  Profile
+                </button>
+                <button
+                  className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm border-t"
+                  onClick={() => onLogout()}
+                >
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Search */}
@@ -100,6 +146,39 @@ const ChatSidebar = () => {
           </motion.button>
         ))}
       </div>
+      {showModal && (
+        <div className="fixed inset-0 bg-[#00000080] flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96">
+            <div className="flex justify-between mb-4">
+              <h2 className="text-lg font-bold">Start New Chat</h2>
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-gray-500 hover:text-gray-700 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <input
+              type="email"
+              placeholder="Search users..."
+              value={email}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setEmail(e.currentTarget.value)
+              }
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 mb-4 focus:ring-2 transition"
+            />
+            <button
+              onClick={() => {
+                addToChat(email);
+                setShowModal(false);
+              }}
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg transition"
+            >
+              Start Chat
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

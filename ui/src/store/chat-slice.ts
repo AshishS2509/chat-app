@@ -7,12 +7,13 @@ export interface Message {
   text: string;
   timestamp: number;
   type: "text" | "image" | "video";
-  mediaUrl?: string;
   forwarded?: boolean;
   forwardedFrom?: string;
 }
 
 export interface Chat {
+  email: string;
+  user: string;
   id: string;
   name: string;
   avatar: string;
@@ -26,57 +27,8 @@ interface ChatState {
   chats: Chat[];
   messages: Record<string, Message[]>;
   activeChatId: string | null;
-  drafts: Record<string, string>;
   currentUserId: string;
 }
-
-const MOCK_CHATS: Chat[] = [
-  {
-    id: "1",
-    name: "Alice Chen",
-    avatar: "AC",
-    lastMessage: "Hey, check this out!",
-    lastMessageTime: Date.now() - 60000,
-    online: true,
-    unread: 2,
-  },
-  {
-    id: "2",
-    name: "Bob Martinez",
-    avatar: "BM",
-    lastMessage: "Sounds good 👍",
-    lastMessageTime: Date.now() - 300000,
-    online: true,
-    unread: 0,
-  },
-  {
-    id: "3",
-    name: "Carol Wu",
-    avatar: "CW",
-    lastMessage: "See you tomorrow!",
-    lastMessageTime: Date.now() - 3600000,
-    online: false,
-    unread: 0,
-  },
-  {
-    id: "4",
-    name: "Design Team",
-    avatar: "DT",
-    lastMessage: "New mockups are ready",
-    lastMessageTime: Date.now() - 7200000,
-    online: true,
-    unread: 5,
-  },
-  {
-    id: "5",
-    name: "Eva Kim",
-    avatar: "EK",
-    lastMessage: "Thanks for the help!",
-    lastMessageTime: Date.now() - 86400000,
-    online: false,
-    unread: 0,
-  },
-];
 
 const MOCK_MESSAGES: Record<string, Message[]> = {
   "1": [
@@ -151,21 +103,10 @@ const MOCK_MESSAGES: Record<string, Message[]> = {
   ],
 };
 
-// Load drafts from localStorage
-const loadDrafts = (): Record<string, string> => {
-  try {
-    const saved = localStorage.getItem("chat-drafts");
-    return saved ? JSON.parse(saved) : {};
-  } catch {
-    return {};
-  }
-};
-
 const initialState: ChatState = {
-  chats: MOCK_CHATS,
+  chats: [],
   messages: MOCK_MESSAGES,
-  activeChatId: "1",
-  drafts: loadDrafts(),
+  activeChatId: null,
   currentUserId: "me",
 };
 
@@ -173,6 +114,9 @@ const chatSlice = createSlice({
   name: "chat",
   initialState,
   reducers: {
+    addChat(state, action: PayloadAction<Chat>) {
+      state.chats.push(action.payload);
+    },
     setActiveChat(state, action: PayloadAction<string>) {
       state.activeChatId = action.payload;
       const chat = state.chats.find((c) => c.id === action.payload);
@@ -184,10 +128,9 @@ const chatSlice = createSlice({
         chatId: string;
         text: string;
         type?: "text" | "image" | "video";
-        mediaUrl?: string;
       }>,
     ) {
-      const { chatId, text, type = "text", mediaUrl } = action.payload;
+      const { chatId, text, type = "text" } = action.payload;
       const msg: Message = {
         id: `msg-${Date.now()}-${Math.random().toString(36).slice(2)}`,
         chatId,
@@ -195,7 +138,6 @@ const chatSlice = createSlice({
         text,
         timestamp: Date.now(),
         type,
-        mediaUrl,
       };
       if (!state.messages[chatId]) state.messages[chatId] = [];
       state.messages[chatId].push(msg);
@@ -204,14 +146,6 @@ const chatSlice = createSlice({
         chat.lastMessage = type === "text" ? text : `📎 ${type}`;
         chat.lastMessageTime = msg.timestamp;
       }
-      // Clear draft
-      delete state.drafts[chatId];
-      localStorage.setItem("chat-drafts", JSON.stringify(state.drafts));
-
-      // Simulate reply after 1-2s
-      setTimeout(() => {
-        // This won't work in reducer - handled in component
-      }, 1500);
     },
     receiveMessage(state, action: PayloadAction<Message>) {
       const msg = action.payload;
@@ -223,17 +157,6 @@ const chatSlice = createSlice({
         chat.lastMessageTime = msg.timestamp;
         if (state.activeChatId !== msg.chatId) chat.unread += 1;
       }
-    },
-    updateDraft(
-      state,
-      action: PayloadAction<{ chatId: string; text: string }>,
-    ) {
-      if (action.payload.text) {
-        state.drafts[action.payload.chatId] = action.payload.text;
-      } else {
-        delete state.drafts[action.payload.chatId];
-      }
-      localStorage.setItem("chat-drafts", JSON.stringify(state.drafts));
     },
     forwardMessage(
       state,
@@ -247,7 +170,6 @@ const chatSlice = createSlice({
         text: message.text,
         timestamp: Date.now(),
         type: message.type,
-        mediaUrl: message.mediaUrl,
         forwarded: true,
         forwardedFrom:
           state.chats.find((c) => c.id === message.chatId)?.name || "Unknown",
@@ -265,9 +187,9 @@ const chatSlice = createSlice({
 
 export const {
   setActiveChat,
+  addChat,
   sendMessage,
   receiveMessage,
-  updateDraft,
   forwardMessage,
 } = chatSlice.actions;
 export default chatSlice.reducer;

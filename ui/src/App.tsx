@@ -14,16 +14,16 @@ function App() {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
-        <ConfigProvider>
-          <BrowserRouter>
+        <BrowserRouter>
+          <ConfigProvider>
             <Routes>
               <Route path="/" element={<ChatPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </BrowserRouter>
-        </ConfigProvider>
+          </ConfigProvider>
+        </BrowserRouter>
       </QueryClientProvider>
     </Provider>
   );

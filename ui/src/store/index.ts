@@ -1,5 +1,6 @@
 import { configureStore } from "@reduxjs/toolkit";
 import chatReducer from "./chat-slice";
+import authReducer from "./auth-slice";
 import {
   type TypedUseSelectorHook,
   useDispatch,
@@ -9,6 +10,7 @@ import {
 export const store = configureStore({
   reducer: {
     chat: chatReducer,
+    auth: authReducer,
   },
 });
 

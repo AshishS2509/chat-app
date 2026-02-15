@@ -1,12 +1,23 @@
 import React, { useState } from "react";
+import { login as loginApi } from "../api/auth";
+import { useAppDispatch } from "../store";
+import { login } from "../store/auth-slice";
+import { useNavigate } from "react-router";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Login attempt:", { email, password });
+    const data = await loginApi({ email: email.trim(), password });
+    if (data) {
+      dispatch(login(data));
+      navigate("/");
+    }
   };
 
   return (

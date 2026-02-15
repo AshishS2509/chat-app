@@ -1,6 +1,9 @@
 import React, { useState } from "react";
+import { register } from "../api/auth";
+import { useNavigate } from "react-router";
 
 export default function RegisterPage() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -16,10 +19,22 @@ export default function RegisterPage() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
-    // Handle registration logic
-    console.log("Register:", formData);
+    if (formData.password !== formData.confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+    const resp = await register({
+      name: formData.name,
+      email: formData.email,
+      password: formData.password,
+    });
+    if ([200, 201].includes(resp ?? 0)) {
+      navigate("/login");
+    } else {
+      alert("Registration failed, please try again.");
+    }
   };
 
   return (
