@@ -1,21 +1,18 @@
 import { useState, useRef, useCallback } from "react";
 import { Send, Smile } from "lucide-react";
 import { motion } from "framer-motion";
-import { useAppDispatch, useAppSelector } from "../store";
-import { sendMessage } from "../store/chat-slice";
 
 const ChatInput = () => {
-  const dispatch = useAppDispatch();
-  const { activeChatId } = useAppSelector((s) => s.chat);
+  const { activeChatId } = { activeChatId: "" };
   const [text, setText] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSend = useCallback(() => {
     if (!text.trim() || !activeChatId) return;
-    dispatch(sendMessage({ chatId: activeChatId, text: text.trim() }));
+    // dispatch(sendMessage({ chatId: activeChatId, text: text.trim() }));
     setText("");
     inputRef.current?.focus();
-  }, [text, activeChatId, dispatch]);
+  }, [text, activeChatId]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {

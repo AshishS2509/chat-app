@@ -1,24 +1,23 @@
-import React, { useState } from "react";
-import { login as loginApi } from "../api/auth";
-import { useAppDispatch } from "../store";
-import { login } from "../store/auth-slice";
+import React, { useEffect, useState } from "react";
+import { useLoginMutation } from "../queries/mutations/auth.mutations";
 import { useNavigate } from "react-router";
+import { getUserData } from "../lib/user.localStorage";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  const dispatch = useAppDispatch();
+  const { mutate, isPending } = useLoginMutation();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
-    const data = await loginApi({ email: email.trim(), password });
-    if (data) {
-      dispatch(login(data));
-      navigate("/");
-    }
+    mutate({ email, password });
   };
+
+  useEffect(() => {
+    const user = getUserData();
+    if (user?.isLoggedIn) navigate("/");
+  }, [navigate]);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -56,6 +55,7 @@ export default function LoginPage() {
 
           <button
             type="submit"
+            disabled={isPending}
             className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg transition"
           >
             Sign In

@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { register } from "../api/auth";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { getUserData } from "../lib/user.localStorage";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -25,17 +25,12 @@ export default function RegisterPage() {
       alert("Passwords do not match");
       return;
     }
-    const resp = await register({
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-    });
-    if ([200, 201].includes(resp ?? 0)) {
-      navigate("/login");
-    } else {
-      alert("Registration failed, please try again.");
-    }
   };
+
+  useEffect(() => {
+    const user = getUserData();
+    if (user?.isLoggedIn) navigate("/");
+  }, [navigate]);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">

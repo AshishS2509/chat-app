@@ -62,7 +62,7 @@ app.post(
   },
 );
 
-app.get("/logout", (req: IRequest, res: Response) => {
+app.post("/logout", (req: IRequest, res: Response) => {
   res.clearCookie("token").json({ message: "Logged out successfully" }).end();
 });
 

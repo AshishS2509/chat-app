@@ -1,20 +1,29 @@
-import { useAppDispatch, useAppSelector } from "../store";
-import { addChat, setActiveChat } from "../store/chat-slice";
 import { motion } from "framer-motion";
 import { Search, MessageSquarePlus, EllipsisVertical, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { addUserToChat } from "../api/chat";
-import { logout as logoutApi } from "../api/auth";
-import { logout } from "../store/auth-slice";
+import { useLogoutMutation } from "../queries/mutations/auth.mutations";
 
 const ChatSidebar = () => {
-  const dispatch = useAppDispatch();
-  const { chats, activeChatId } = useAppSelector((s) => s.chat);
+  const { chats, activeChatId } = {
+    chats: [
+      {
+        name: "",
+        id: "",
+        lastMessage: "",
+        unread: 2,
+        lastMessageTime: new Date().getTime(),
+        avatar: "",
+      },
+    ],
+    activeChatId: "",
+  };
   const [query, setQuery] = useState("");
   const [showMenu, setShowMenu] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [email, setEmail] = useState("");
   const [search, setSearch] = useState("");
+
+  const { mutate } = useLogoutMutation();
 
   const filtered = chats.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase()),
@@ -40,13 +49,11 @@ const ChatSidebar = () => {
 
   async function addToChat(email: string) {
     if (!email.trim()) return;
-    const chat = await addUserToChat(email.trim());
-    if (chat) dispatch(addChat(chat));
+    // to do
   }
 
   function onLogout() {
-    logoutApi();
-    dispatch(logout());
+    mutate();
   }
 
   return (
@@ -109,7 +116,7 @@ const ChatSidebar = () => {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.05 }}
-            onClick={() => dispatch(setActiveChat(chat.id))}
+            onClick={() => null}
             data-chat-id={chat.id}
             className={`w-full flex items-center gap-3 px-4 py-3 transition-all duration-200 ${
               activeChatId === chat.id

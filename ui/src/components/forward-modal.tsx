@@ -1,7 +1,16 @@
-import { useAppDispatch, useAppSelector } from "../store";
-import { forwardMessage, type Message } from "../store/chat-slice";
 import { motion } from "framer-motion";
 import { X, Forward } from "lucide-react";
+
+export interface Message {
+  id: string;
+  chatId: string;
+  senderId: string;
+  text: string;
+  timestamp: number;
+  type: "text" | "image" | "video";
+  forwarded?: boolean;
+  forwardedFrom?: string;
+}
 
 interface Props {
   message: Message;
@@ -9,12 +18,22 @@ interface Props {
 }
 
 const ForwardModal = ({ message, onClose }: Props) => {
-  const dispatch = useAppDispatch();
-  const { chats } = useAppSelector((s) => s.chat);
+  const { chats } = {
+    chats: [
+      {
+        name: "",
+        id: "",
+        lastMessage: "",
+        unread: 2,
+        lastMessageTime: new Date().getTime(),
+        avatar: "",
+      },
+    ],
+  };
   const otherChats = chats.filter((c) => c.id !== message.chatId);
 
   const handleForward = (toChatId: string) => {
-    dispatch(forwardMessage({ message, toChatId }));
+    console.log(toChatId);
     onClose();
   };
 

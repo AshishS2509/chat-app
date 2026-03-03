@@ -1,5 +1,5 @@
-import { useAppDispatch, useAppSelector } from "../store";
-import { receiveMessage, type Message } from "../store/chat-slice";
+// import { useAppDispatch, useAppSelector } from "../store";
+// import { receiveMessage, type Message } from "../store/chat-slice";
 import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowDown } from "lucide-react";
@@ -7,22 +7,56 @@ import MessageBubble from "./message-bubble";
 import ForwardModal from "./forward-modal";
 import ChatInput from "./chat-input";
 
-const REPLIES = [
-  "That's interesting! Tell me more.",
-  "I totally agree with you on that.",
-  "Haha, nice one! 😄",
-  "Let me think about that...",
-  "Sounds like a plan! 🎉",
-  "Got it, thanks for letting me know.",
-  "I'll get back to you on that.",
-  "That's awesome!",
-];
+export interface Message {
+  id: string;
+  chatId: string;
+  senderId: string;
+  text: string;
+  timestamp: number;
+  type: "text" | "image" | "video";
+  forwarded?: boolean;
+  forwardedFrom?: string;
+}
+
+// const REPLIES = [
+//   "That's interesting! Tell me more.",
+//   "I totally agree with you on that.",
+//   "Haha, nice one! 😄",
+//   "Let me think about that...",
+//   "Sounds like a plan! 🎉",
+//   "Got it, thanks for letting me know.",
+//   "I'll get back to you on that.",
+//   "That's awesome!",
+// ];
 
 const ChatArea = () => {
-  const dispatch = useAppDispatch();
-  const { chats, messages, activeChatId, currentUserId } = useAppSelector(
-    (s) => s.chat,
-  );
+  const { chats, messages, activeChatId, currentUserId } = {
+    chats: [
+      {
+        name: "",
+        id: "",
+        lastMessage: "",
+        unread: 2,
+        lastMessageTime: new Date().getTime(),
+        avatar: "",
+        online: false,
+      },
+    ],
+    activeChatId: "",
+    messages: {
+      "1": [
+        {
+          id: "m1",
+          chatId: "1",
+          senderId: "1",
+          text: "Hey! How are you?",
+          timestamp: 120000,
+          type: "text",
+        },
+      ],
+    },
+    currentUserId: "",
+  };
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
@@ -31,7 +65,8 @@ const ChatArea = () => {
 
   const activeChat = chats.find((c) => c.id === activeChatId);
   const chatMessages = useMemo(
-    () => (activeChatId ? messages[activeChatId] || [] : []),
+    () =>
+      activeChatId ? messages[activeChatId as keyof typeof messages] || [] : [],
     [activeChatId, messages],
   );
 
@@ -48,33 +83,7 @@ const ChatArea = () => {
     if (!activeChatId || chatMessages.length === 0) return;
     const last = chatMessages[chatMessages.length - 1];
     if (last.senderId !== currentUserId) return;
-
-    const replyTimeout = setTimeout(
-      () => {
-        dispatch(
-          receiveMessage({
-            id: `reply-${Date.now()}`,
-            chatId: activeChatId,
-            senderId: activeChatId,
-            text: REPLIES[Math.floor(Math.random() * REPLIES.length)],
-            timestamp: Date.now(),
-            type: "text",
-          }),
-        );
-      },
-      1500 + Math.random() * 1000,
-    );
-
-    return () => {
-      clearTimeout(replyTimeout);
-    };
-  }, [
-    chatMessages.length,
-    activeChatId,
-    currentUserId,
-    dispatch,
-    chatMessages,
-  ]);
+  }, [chatMessages.length, activeChatId, currentUserId, chatMessages]);
 
   const handleScroll = () => {
     if (!containerRef.current) return;
@@ -182,7 +191,7 @@ const ChatArea = () => {
         {chatMessages.map((msg) => (
           <MessageBubble
             key={msg.id}
-            message={msg}
+            message={msg as Message}
             isOwn={msg.senderId === currentUserId}
             onDragStart={() => {}}
           />
