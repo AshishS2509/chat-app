@@ -35,11 +35,12 @@ export async function login({
       throw new Error("Invalid email or password");
     }
     const token = await new SignJWT({
+      id: user.data._id.toString(),
       email: user.data.email,
       name: user.data.name,
     })
       .setProtectedHeader({ alg: "HS256" })
-      .setExpirationTime("2h")
+      .setExpirationTime("1sec")
       .sign(new TextEncoder().encode(JWT_SECRET!));
     return {
       data: { token, user: { name: user.data.name, email: user.data.email } },
@@ -64,9 +65,13 @@ export async function login({
 
 export async function verifyToken(
   token: string,
-): Promise<IFunctionReturn<{ name: string; email: string } | null>> {
+): Promise<
+  IFunctionReturn<{ name: string; email: string; id: string } | null>
+> {
   try {
-    const { payload }: { payload: { name: string; email: string } } =
+    const {
+      payload,
+    }: { payload: { name: string; email: string; id: string } } =
       await jwtVerify(token, new TextEncoder().encode(JWT_SECRET!));
     return {
       data: payload,

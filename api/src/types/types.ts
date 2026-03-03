@@ -13,5 +13,6 @@ export interface IRequest<P = null, B = null, Q = null> extends Request<
 > {
   meta?: {
     user: string;
+    id: string;
   };
 }

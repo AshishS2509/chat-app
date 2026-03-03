@@ -6,7 +6,7 @@ import express, {
 import cors from "cors";
 import dotenv from "dotenv";
 import connectDB from "./db/connection.js";
-import { addUserToChat, createUser } from "./controller/user.controller.js";
+import { createUser } from "./controller/user.controller.js";
 import { login, verifyToken } from "./controller/auth.controller.js";
 import cookieParser from "cookie-parser";
 import type { IRequest } from "./types/types.js";
@@ -67,39 +67,23 @@ app.post("/logout", (req: IRequest, res: Response) => {
 });
 
 app.use(async (req: IRequest, res: Response, next: NextFunction) => {
-  const token = req.cookies.token;
-  if (!token) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-  const { data, error } = await verifyToken(token);
-
-  if (req.path === "/auth-check") {
-    return res.status(200).json({ user: data }).end();
-  } else {
-    req.meta = { user: data?.email ?? "" };
-  }
-  if (error.isError) {
-    return res.status(401).json({ error: error.message });
-  }
-  next();
-});
-
-app.post(
-  "/add-to-chat",
-  async (req: IRequest<null, { email: string }>, res: Response) => {
-    const { email } = req.body;
-    const { user } = req.meta || {};
-    if (!user) {
+  try {
+    const token = req.cookies.token;
+    if (!token) {
       return res.status(401).json({ error: "Unauthorized" });
     }
-    console.log(`Adding user ${email} to chat for user ${user}`);
-    const resp = await addUserToChat({ email, user });
-    if (resp.error.isError) {
-      return res.status(400).json({ error: resp.error.message });
+    const { data, error } = await verifyToken(token);
+
+    if (error.isError) {
+      return res.status(401).json({ error: error.message });
     }
-    res.status(200).json({ data: resp.data }).end();
-  },
-);
+
+    req.meta = { id: data?.id ?? "", user: data?.email ?? "" };
+    next();
+  } catch (err) {
+    res.status(401).json({ error: "Invalid token" });
+  }
+});
 
 app.use((err: Error, req: IRequest, res: Response, next: NextFunction) => {
   console.error(err.stack);

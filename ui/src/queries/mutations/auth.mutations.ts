@@ -4,6 +4,7 @@ import { useNavigate } from "react-router";
 import type { TUser } from "../../types/auth.types";
 import { clearUserData, setUserData } from "../../lib/user.localStorage";
 
+///////////////////////////////// API calls /////////////////////////////////
 export async function login({
   email,
   password,
@@ -26,23 +27,6 @@ export async function login({
   }
 }
 
-export const useLoginMutation = () => {
-  const navigate = useNavigate();
-  const { mutate, isPending } = useMutation({
-    mutationFn: login,
-    onSuccess: (data: TUser | null) => {
-      navigate("/");
-      if (data) {
-        setUserData(data);
-      }
-    },
-    onError: (e) => {
-      console.log(e);
-    },
-  });
-  return { mutate, isPending };
-};
-
 export async function logout() {
   try {
     await api.post("/logout");
@@ -54,6 +38,25 @@ export async function logout() {
     );
   }
 }
+
+////////////////////////////// Mutations /////////////////////////////
+
+export const useLoginMutation = () => {
+  const navigate = useNavigate();
+  const { mutate, isPending } = useMutation({
+    mutationFn: login,
+    onSuccess: (data: TUser | null) => {
+      if (data) {
+        setUserData({ ...data, isLoggedIn: true });
+        navigate("/");
+      }
+    },
+    onError: (e) => {
+      console.log(e);
+    },
+  });
+  return { mutate, isPending };
+};
 
 export const useLogoutMutation = () => {
   const navigate = useNavigate();

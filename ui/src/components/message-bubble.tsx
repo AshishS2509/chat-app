@@ -1,18 +1,7 @@
-// import { type Message } from "../store/chat-slice";
 import { motion } from "framer-motion";
 import { Forward, CornerUpRight } from "lucide-react";
 import { useState } from "react";
-
-export interface Message {
-  id: string;
-  chatId: string;
-  senderId: string;
-  text: string;
-  timestamp: number;
-  type: "text" | "image" | "video";
-  forwarded?: boolean;
-  forwardedFrom?: string;
-}
+import type { Message } from "../types/data.types";
 
 interface Props {
   message: Message;

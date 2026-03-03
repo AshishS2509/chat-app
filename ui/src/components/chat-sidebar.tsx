@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { Search, MessageSquarePlus, EllipsisVertical, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLogoutMutation } from "../queries/mutations/auth.mutations";
@@ -75,22 +75,28 @@ const ChatSidebar = () => {
             <EllipsisVertical className="w-5 h-5" />
           </button>
           <div className="relative">
-            {showMenu && (
-              <div
-                className="absolute right-0 top-8 mt-2 w-48 bg-white rounded-lg shadow-lg z-50"
-                onClick={() => setShowMenu(false)}
-              >
-                <button className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">
-                  Profile
-                </button>
-                <button
-                  className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm border-t"
-                  onClick={() => onLogout()}
+            <AnimatePresence>
+              {showMenu && (
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.1 }}
+                  className="absolute right-0 top-8 mt-2 w-48 bg-white rounded-lg shadow-lg z-50"
+                  onClick={() => setShowMenu(false)}
                 >
-                  Logout
-                </button>
-              </div>
-            )}
+                  <button className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">
+                    Profile
+                  </button>
+                  <button
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm border-t"
+                    onClick={() => onLogout()}
+                  >
+                    Logout
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>
@@ -153,39 +159,58 @@ const ChatSidebar = () => {
           </motion.button>
         ))}
       </div>
-      {showModal && (
-        <div className="fixed inset-0 bg-[#00000080] flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96">
-            <div className="flex justify-between mb-4">
-              <h2 className="text-lg font-bold">Start New Chat</h2>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-gray-500 hover:text-gray-700 transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <input
-              type="email"
-              placeholder="Search users..."
-              value={email}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setEmail(e.currentTarget.value)
-              }
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 mb-4 focus:ring-2 transition"
-            />
-            <button
-              onClick={() => {
-                addToChat(email);
-                setShowModal(false);
+      <AnimatePresence>
+        {showModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{
+              ease: ["easeInOut"],
+              duration: 0.1,
+            }}
+            className="fixed inset-0 bg-[#00000080] flex items-center justify-center z-50"
+          >
+            <motion.div
+              initial={{ y: 20 }}
+              animate={{ y: 0 }}
+              exit={{ y: 20 }}
+              transition={{
+                duration: 0.1,
               }}
-              className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg transition"
+              className="bg-white rounded-lg p-6 w-96"
             >
-              Start Chat
-            </button>
-          </div>
-        </div>
-      )}
+              <div className="flex justify-between mb-4">
+                <h2 className="text-lg font-bold">Start New Chat</h2>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="text-gray-500 hover:text-gray-700 transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <input
+                type="email"
+                placeholder="Search users..."
+                value={email}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setEmail(e.currentTarget.value)
+                }
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 mb-4 focus:ring-2 transition"
+              />
+              <button
+                onClick={() => {
+                  addToChat(email);
+                  setShowModal(false);
+                }}
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg transition"
+              >
+                Start Chat
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
