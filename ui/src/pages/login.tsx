@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useLoginMutation } from "../queries/mutations/auth.mutations";
+import { useLoginMutation } from "../api/mutations/auth.mutations";
 import { useNavigate } from "react-router";
 import { getUserData } from "../lib/user.localStorage";
 import { AnimatePresence, motion } from "framer-motion";

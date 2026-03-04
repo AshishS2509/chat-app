@@ -1,22 +1,10 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, MessageSquarePlus, EllipsisVertical, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useLogoutMutation } from "../queries/mutations/auth.mutations";
+import { useLogoutMutation } from "../api/mutations/auth.mutations";
+import type { IChat } from "../types/data.types";
 
-const ChatSidebar = () => {
-  const { chats, activeChatId } = {
-    chats: [
-      {
-        name: "",
-        id: "",
-        lastMessage: "",
-        unread: 2,
-        lastMessageTime: new Date().getTime(),
-        avatar: "",
-      },
-    ],
-    activeChatId: "",
-  };
+const ChatSidebar = ({ chats, active }: { chats: IChat[]; active: string }) => {
   const [query, setQuery] = useState("");
   const [showMenu, setShowMenu] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -29,7 +17,7 @@ const ChatSidebar = () => {
     c.name.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const formatTime = (ts?: number) => {
+  const formatTime = (ts?: number | Date) => {
     if (!ts) return "";
     const d = new Date(ts);
     const now = new Date();
@@ -125,7 +113,7 @@ const ChatSidebar = () => {
             onClick={() => null}
             data-chat-id={chat.id}
             className={`w-full flex items-center gap-3 px-4 py-3 transition-all duration-200 ${
-              activeChatId === chat.id
+              active === chat.id
                 ? "bg-gray-200 border-r-2 border-primary"
                 : "hover:bg-gray-300"
             }`}

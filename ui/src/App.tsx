@@ -5,7 +5,7 @@ import NotFound from "./pages/not-found";
 import ConfigProvider from "./config";
 import LoginPage from "./pages/login";
 import RegisterPage from "./pages/register";
-import { queryClient } from "./queries/config";
+import { queryClient } from "./api/config";
 
 function App() {
   return (

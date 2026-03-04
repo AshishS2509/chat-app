@@ -8,3 +8,9 @@ export type TUser = {
   email: string;
   isLoggedIn?: boolean;
 };
+
+export type TRegisterUser = {
+  name: string;
+  email: string;
+  password: string;
+};

@@ -2,9 +2,11 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { getUserData } from "../lib/user.localStorage";
 import { AnimatePresence, motion } from "framer-motion";
+import { useRegisterMutation } from "../api/mutations/auth.mutations";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const { mutate, isPending } = useRegisterMutation();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -26,6 +28,7 @@ export default function RegisterPage() {
       alert("Passwords do not match");
       return;
     }
+    mutate({ ...formData });
   };
 
   useEffect(() => {
@@ -35,7 +38,7 @@ export default function RegisterPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <AnimatePresence >
+      <AnimatePresence>
         <motion.div
           initial={{ opacity: 0, y: 20, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -105,6 +108,7 @@ export default function RegisterPage() {
 
             <button
               type="submit"
+              disabled={isPending}
               className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition"
             >
               Register
