@@ -40,7 +40,7 @@ export async function login({
       name: user.data.name,
     })
       .setProtectedHeader({ alg: "HS256" })
-      .setExpirationTime("1sec")
+      .setExpirationTime("5mins")
       .sign(new TextEncoder().encode(JWT_SECRET!));
     return {
       data: { token, user: { name: user.data.name, email: user.data.email } },

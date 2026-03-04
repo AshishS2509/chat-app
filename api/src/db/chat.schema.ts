@@ -7,7 +7,7 @@ export interface IChat extends Document {
   unread: number;
   createdAt: Date;
   email: string;
-  user: string;
+  userId: string;
   avatar: string;
 }
 
@@ -18,7 +18,7 @@ const ChatSchema = new Schema<IChat>(
     lastMessageTime: { type: Date, required: false },
     unread: { type: Number, required: true },
     email: { type: String, required: true, trim: true },
-    user: { type: String, required: true, trim: true },
+    userId: { type: String, required: true, trim: true },
     avatar: { type: String, required: true, trim: true },
   },
   {

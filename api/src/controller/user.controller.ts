@@ -67,10 +67,10 @@ export async function getUser({
 
 export async function addUserToChat({
   email,
-  user,
+  userId,
 }: {
   email: string;
-  user: string;
+  userId: string;
 }): Promise<IFunctionReturn<IChat | null>> {
   try {
     const chatUser = await User.findOne({ email });
@@ -82,11 +82,11 @@ export async function addUserToChat({
     const chat = await Chat.create({
       name: chatUser.name,
       email: chatUser.email,
-      user,
+      userId,
       avatar,
       unread: 0,
     });
-    console.log(`Chat created with id ${chat._id} for user ${user}`);
+    console.log(`Chat created with id ${chat._id} for user ${userId}`);
     return {
       data: chat,
       error: {
@@ -96,7 +96,7 @@ export async function addUserToChat({
     };
   } catch (error) {
     console.error(
-      `Error adding user ${email} to chat for user ${user}:`,
+      `Error adding user ${email} to chat for user ${userId}:`,
       error,
     );
     return {
@@ -107,6 +107,24 @@ export async function addUserToChat({
           error instanceof Error
             ? error.message
             : "An error occured while adding user to chat",
+      },
+    };
+  }
+}
+
+export async function getChats(userId: string) {
+  try {
+    const chats = await Chat.find({ userId }).lean();
+    return {
+      data: chats,
+      results: chats.length,
+    };
+  } catch (error: any) {
+    return {
+      data: null,
+      error: {
+        isError: true,
+        message: "message" in error ? error.message : "DB Error",
       },
     };
   }
