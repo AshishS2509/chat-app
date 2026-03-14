@@ -1,10 +1,20 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, MessageSquarePlus, EllipsisVertical, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type RefObject } from "react";
 import { useLogoutMutation } from "../api/mutations/auth.mutations";
 import type { IChat } from "../types/data.types";
 
-const ChatSidebar = ({ chats, active }: { chats: IChat[]; active: string }) => {
+const ChatSidebar = ({
+  socket,
+  chats,
+  active,
+  handleCurrentChat,
+}: {
+  socket: RefObject<WebSocket | null>;
+  chats: IChat[];
+  active: string;
+  handleCurrentChat: (id: string) => void;
+}) => {
   const [query, setQuery] = useState("");
   const [showMenu, setShowMenu] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -37,13 +47,21 @@ const ChatSidebar = ({ chats, active }: { chats: IChat[]; active: string }) => {
 
   async function addToChat(email: string) {
     if (!email.trim()) return;
-    // to do
+    socket.current?.send(JSON.stringify({ type: "NEW_CHAT", data: { email } }));
   }
 
   function onLogout() {
     mutate();
   }
 
+  function handleChatClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
+    const button: HTMLButtonElement | null = (
+      e.target as HTMLButtonElement
+    ).closest("[data-chat-id]");
+    if (!button) return;
+    const chatId = button.dataset.chatId as string;
+    handleCurrentChat(chatId);
+  }
   return (
     <div className="w-80 h-full flex flex-col">
       {/* Header */}
@@ -103,17 +121,19 @@ const ChatSidebar = ({ chats, active }: { chats: IChat[]; active: string }) => {
         </div>
       </div>
       {/* Chat list */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin  border-b-2">
+      <div
+        className="flex-1 overflow-y-auto scrollbar-thin  border-b-2"
+        onClick={handleChatClick}
+      >
         {filtered.map((chat, i) => (
           <motion.button
-            key={chat.id}
+            key={i}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.05 }}
-            onClick={() => null}
-            data-chat-id={chat.id}
+            data-chat-id={chat._id}
             className={`w-full flex items-center gap-3 px-4 py-3 transition-all duration-200 ${
-              active === chat.id
+              active === chat._id
                 ? "bg-gray-200 border-r-2 border-primary"
                 : "hover:bg-gray-300"
             }`}

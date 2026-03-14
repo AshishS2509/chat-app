@@ -1,18 +1,28 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, type RefObject } from "react";
 import { Send, Smile } from "lucide-react";
 import { motion } from "framer-motion";
 
-const ChatInput = () => {
-  const { activeChatId } = { activeChatId: "" };
+const ChatInput = ({
+  activeChatId,
+  socket,
+}: {
+  activeChatId: string;
+  socket: RefObject<WebSocket | null>;
+}) => {
   const [text, setText] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSend = useCallback(() => {
     if (!text.trim() || !activeChatId) return;
-    // dispatch(sendMessage({ chatId: activeChatId, text: text.trim() }));
+    socket.current?.send(
+      JSON.stringify({
+        type: "SEND_MESSAGE",
+        data: { chatId: activeChatId, text: text.trim() },
+      }),
+    );
     setText("");
     inputRef.current?.focus();
-  }, [text, activeChatId]);
+  }, [text, activeChatId, socket]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {

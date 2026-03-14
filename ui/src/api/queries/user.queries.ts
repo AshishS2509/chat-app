@@ -3,17 +3,9 @@ import api from "../config";
 import type { IChat } from "../../types/data.types";
 
 async function getChatList() {
-  try {
-    const data = await api.get<{ data: IChat[]; results: number }>(
-      "/user/chats",
-    );
-    return data?.data;
-  } catch (error) {
-    alert(
-      error instanceof Error ? error.message : "An error occurred during login",
-    );
-    return null;
-  }
+  const data = await api.get<{ data: IChat[]; results: number }>("/user/chats");
+
+  return data?.data ?? null;
 }
 
 export const userQueries = {

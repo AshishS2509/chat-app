@@ -1,5 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 import axios from "axios";
+import { setUserData } from "../lib/user.localStorage";
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,7 +20,14 @@ const api = axios.create({
 
 api.interceptors.response.use(
   (d) => d,
-  (err) => console.log(err),
+  (err) => {
+    if (err.status === 401) {
+      setUserData({ name: "", email: "", isLoggedIn: false });
+      window.location.pathname = "/login";
+      return;
+    }
+    return err;
+  },
 );
 
 export default api;

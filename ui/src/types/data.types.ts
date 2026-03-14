@@ -10,7 +10,7 @@ export interface Message {
 }
 
 export interface IChat {
-  id: string;
+  _id: string;
   name: string;
   lastMessage: string;
   lastMessageTime: Date;

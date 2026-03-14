@@ -1,10 +1,15 @@
-import { useRef, useEffect, useState, useCallback, useMemo } from "react";
+import {
+  useRef,
+  useEffect,
+  useState,
+  useCallback,
+  type RefObject,
+} from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowDown } from "lucide-react";
-import MessageBubble from "./message-bubble";
-import ForwardModal from "./forward-modal";
 import ChatInput from "./chat-input";
-import type { Message } from "../types/data.types";
+import type { IChat, Message } from "../types/data.types";
+import MessageBubble from "./message-bubble";
 
 // const REPLIES = [
 //   "That's interesting! Tell me more.",
@@ -17,46 +22,18 @@ import type { Message } from "../types/data.types";
 //   "That's awesome!",
 // ];
 
-const ChatArea = () => {
-  const { chats, messages, activeChatId, currentUserId } = {
-    chats: [
-      {
-        name: "",
-        id: "",
-        lastMessage: "",
-        unread: 2,
-        lastMessageTime: new Date().getTime(),
-        avatar: "",
-        online: false,
-      },
-    ],
-    activeChatId: "",
-    messages: {
-      "1": [
-        {
-          id: "m1",
-          chatId: "1",
-          senderId: "1",
-          text: "Hey! How are you?",
-          timestamp: 120000,
-          type: "text",
-        },
-      ],
-    },
-    currentUserId: "",
-  };
+const ChatArea = ({
+  socket,
+  currentChat,
+}: {
+  socket: RefObject<WebSocket | null>;
+  currentChat: IChat | null;
+}) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
-  const [forwardTarget, setForwardTarget] = useState<Message | null>(null);
-  const [isDragOverChat, setIsDragOverChat] = useState(false);
-
-  const activeChat = chats.find((c) => c.id === activeChatId);
-  const chatMessages = useMemo(
-    () =>
-      activeChatId ? messages[activeChatId as keyof typeof messages] || [] : [],
-    [activeChatId, messages],
-  );
+  // const [forwardTarget, setForwardTarget] = useState<Message | null>(null);
+  // const [isDragOverChat, setIsDragOverChat] = useState(false);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -64,14 +41,7 @@ const ChatArea = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [chatMessages.length, scrollToBottom]);
-
-  // Simulate replies
-  useEffect(() => {
-    if (!activeChatId || chatMessages.length === 0) return;
-    const last = chatMessages[chatMessages.length - 1];
-    if (last.senderId !== currentUserId) return;
-  }, [chatMessages.length, activeChatId, currentUserId, chatMessages]);
+  }, [scrollToBottom]);
 
   const handleScroll = () => {
     if (!containerRef.current) return;
@@ -79,22 +49,22 @@ const ChatArea = () => {
     setShowScrollBtn(scrollHeight - scrollTop - clientHeight > 100);
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOverChat(true);
-  };
+  // const handleDragOver = (e: React.DragEvent) => {
+  //   e.preventDefault();
+  //   setIsDragOverChat(true);
+  // };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOverChat(false);
-    const msgData = e.dataTransfer.getData("message");
-    if (msgData) {
-      const msg = JSON.parse(msgData) as Message;
-      setForwardTarget(msg);
-    }
-  };
+  // const handleDrop = (e: React.DragEvent) => {
+  //   e.preventDefault();
+  //   setIsDragOverChat(false);
+  //   const msgData = e.dataTransfer.getData("message");
+  //   if (msgData) {
+  //     const msg = JSON.parse(msgData) as Message;
+  //     setForwardTarget(msg);
+  //   }
+  // };
 
-  if (!activeChatId || !activeChat) {
+  if (!currentChat) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
@@ -123,28 +93,28 @@ const ChatArea = () => {
   return (
     <div
       className="flex-1 flex flex-col relative"
-      onDragOver={handleDragOver}
-      onDragLeave={() => setIsDragOverChat(false)}
-      onDrop={handleDrop}
+      // onDragOver={handleDragOver}
+      // onDragLeave={() => setIsDragOverChat(false)}
+      // onDrop={handleDrop}
     >
       <div className="px-6 py-3.5 flex items-center justify-between bg-gray-200">
         <div className="flex items-center gap-3">
           <div className="relative">
             <div className="w-10 h-10 rounded-full border border-gray-400 flex items-center justify-center text-sm font-semibold">
-              {activeChat.avatar}
+              {currentChat.avatar}
             </div>
           </div>
           <div>
-            <h2 className="font-semibold text-sm">{activeChat.name}</h2>
-            <p className="text-xs">
-              {activeChat.online ? "Online" : "Offline"}
-            </p>
+            <h2 className="font-semibold text-sm">{currentChat.name}</h2>
+            {/* <p className="text-xs">
+              {currentChat.online ? "Online" : "Offline"}
+            </p> */}
           </div>
         </div>
       </div>
 
       {/* Drop overlay */}
-      <AnimatePresence>
+      {/* <AnimatePresence>
         {isDragOverChat && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -157,7 +127,7 @@ const ChatArea = () => {
             </span>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence> */}
 
       {/* Messages */}
       <div
@@ -176,11 +146,11 @@ const ChatArea = () => {
       `,
           }}
         />
-        {chatMessages.map((msg) => (
+        {[{ id: "", senderId: "" }].map((msg) => (
           <MessageBubble
             key={msg.id}
             message={msg as Message}
-            isOwn={msg.senderId === currentUserId}
+            isOwn={msg.senderId === currentChat._id}
             onDragStart={() => {}}
           />
         ))}
@@ -202,15 +172,15 @@ const ChatArea = () => {
         )}
       </AnimatePresence>
 
-      <ChatInput />
+      <ChatInput activeChatId={currentChat._id} socket={socket} />
 
       {/* Forward modal */}
-      {forwardTarget && (
+      {/* {forwardTarget && (
         <ForwardModal
           message={forwardTarget}
           onClose={() => setForwardTarget(null)}
         />
-      )}
+      )} */}
     </div>
   );
 };

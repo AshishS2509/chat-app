@@ -7,48 +7,26 @@ import { clearUserData, setUserData } from "../../lib/user.localStorage";
 ///////////////////////////////// API calls /////////////////////////////////
 
 async function registerUser({ name, email, password }: TRegisterUser) {
-  try {
-    const response = await api.post<{ user: TUser }>("/register", {
-      name,
-      email,
-      password,
-    });
+  const response = await api.post<{ user: TUser }>("/register", {
+    name,
+    email,
+    password,
+  });
 
-    return response.data.user;
-  } catch (error) {
-    alert(
-      error instanceof Error ? error.message : "An error occurred during login",
-    );
-    return null;
-  }
+  return response.data.user;
 }
 
 async function login({ email, password }: TLogin) {
-  try {
-    const response = await api.post<{ user: TUser }>("/login", {
-      email,
-      password,
-    });
+  const response = await api.post<{ user: TUser }>("/login", {
+    email,
+    password,
+  });
 
-    return response.data.user;
-  } catch (error) {
-    alert(
-      error instanceof Error ? error.message : "An error occurred during login",
-    );
-    return null;
-  }
+  return response.data;
 }
 
 async function logout() {
-  try {
-    await api.post("/logout");
-  } catch (error) {
-    alert(
-      error instanceof Error
-        ? error.message
-        : "An error occurred during logout",
-    );
-  }
+  return await api.post("/logout");
 }
 
 ////////////////////////////// Mutations /////////////////////////////
@@ -64,6 +42,7 @@ export const useRegisterMutation = () => {
       }
     },
     onError: (e) => {
+      alert(e instanceof Error ? e.message : "An error occurred during login");
       console.log(e);
     },
   });
@@ -75,13 +54,14 @@ export const useLoginMutation = () => {
   const navigate = useNavigate();
   const { mutate, isPending } = useMutation({
     mutationFn: login,
-    onSuccess: (data: TUser | null) => {
+    onSuccess: (data: { user: TUser } | null) => {
       if (data) {
-        setUserData({ ...data, isLoggedIn: true });
+        setUserData({ ...data.user, isLoggedIn: true });
         navigate("/");
       }
     },
     onError: (e) => {
+      alert(e instanceof Error ? e.message : "An error occurred during login");
       console.log(e);
     },
   });
@@ -97,6 +77,7 @@ export const useLogoutMutation = () => {
       clearUserData();
     },
     onError: (e) => {
+      alert(e instanceof Error ? e.message : "An error occurred during logout");
       console.log(e);
     },
   });
