@@ -13,13 +13,22 @@ import auth from "./routes/auth.routes.js";
 import { createServer } from "node:http";
 import WebSocket, { WebSocketServer } from "ws";
 import user from "./routes/user.routes.js";
-import { getChats } from "./controller/user.controller.js";
+import { addUserToChat, getChats } from "./controller/user.controller.js";
+
+interface SocketMeta {
+  id: string;
+  [key: string]: any;
+}
+
+interface AuthedSocket extends WebSocket {
+  meta?: SocketMeta;
+}
 
 const app: Express = express();
 const server = createServer(app);
 const PORT = process.env.PORT || 3000;
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 app.use(
   cors({
@@ -75,31 +84,91 @@ wss.on("listening", () => {
   console.log("Web socket server listening on path '/wss'");
 });
 
-wss.on("connection", async (socket, req) => {
+wss.on("connection", async (socket: AuthedSocket, req) => {
   try {
-    const cookieHeader = req.headers.cookie ?? "";
-    const cookies = Object.fromEntries(
-      cookieHeader.split(";").map((c) => {
-        const [k, ...rest] = c.split("=");
-        return [k?.trim(), rest.join("=").trim()];
+    const cookies: Record<string, string> = {};
+
+    (req.headers.cookie || "").split(";").forEach((cookie) => {
+      const [key, ...v] = cookie.trim().split("=");
+      if (!key) return;
+      cookies[key] = decodeURIComponent(v.join("="));
+    });
+
+    const token = cookies.token;
+
+    if (!token) throw new Error("Unauthorized");
+
+    const { data, error } = await verifyToken(token);
+
+    if (!data || error?.isError) {
+      throw new Error("Unauthorized");
+    }
+
+    socket.meta = {
+      ...data,
+    };
+
+    const chats = await getChats(data.id);
+
+    socket.send(
+      JSON.stringify({
+        type: "INIT_CHATS",
+        data: chats,
       }),
     );
-    const token = cookies.token;
-    if (!token) throw new Error("Unauthorized", { cause: 401 });
-    const { data, error } = await verifyToken(token);
-    if (!data || error.isError) throw new Error("Unauthorized", { cause: 401 });
-    const chats = await getChats(data.id);
-    socket.send(JSON.stringify(chats));
   } catch (error: any) {
-    console.log(error);
-    return socket.close(
-      error.cause ?? 401,
+    console.error(error);
+
+    socket.close(
+      1008,
       JSON.stringify({
         error: {
           isError: true,
-          message: "message" in error ? error.message : "Unhandled Exception",
+          message: error?.message || "Unhandled Exception",
         },
       }),
     );
+
+    return;
   }
+
+  socket.on("message", async (raw) => {
+    try {
+      if (!socket.meta) {
+        socket.close(1008, "Unauthorized");
+        return;
+      }
+
+      const message = JSON.parse(raw.toString());
+
+      console.log("User:", socket.meta.id);
+      console.log("Message:", message);
+
+      if (message.type === "SEND_MESSAGE") {
+        const chatId = message.data.chatId;
+        const text = message.data.text;
+
+        console.log(
+          `User ${socket.meta.id} sent message to chat ${chatId} : ${text}`,
+        );
+      } else if (message.type === "NEW_CHAT") {
+        const data = await addUserToChat({
+          email: message.data.email as string,
+          userId: socket.meta.id,
+        });
+        if (data.error.isError) {
+          socket.send(JSON.stringify({ error: "Error Adding user to chat." }));
+        }
+        socket.send(
+          JSON.stringify({ type: "NEW_CHAT", data: { success: true } }),
+        );
+      }
+    } catch (err) {
+      console.error("Invalid WS message:", err);
+    }
+  });
+
+  socket.on("close", () => {
+    console.log("Client disconnected:", socket.meta?.id);
+  });
 });

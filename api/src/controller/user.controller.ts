@@ -114,7 +114,9 @@ export async function addUserToChat({
 
 export async function getChats(userId: string) {
   try {
-    const chats = await Chat.find({ userId }).lean();
+    const chats = await Chat.find({ userId }, null, {
+      sort: "-createdAt",
+    }).lean();
     return {
       data: chats,
       results: chats.length,

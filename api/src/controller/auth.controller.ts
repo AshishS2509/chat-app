@@ -17,7 +17,7 @@ export async function login({
 }): Promise<
   IFunctionReturn<{
     token: string;
-    user: { name: string; email: string };
+    user: { name: string; email: string; id: string };
   } | null>
 > {
   try {
@@ -40,10 +40,17 @@ export async function login({
       name: user.data.name,
     })
       .setProtectedHeader({ alg: "HS256" })
-      .setExpirationTime("5mins")
+      .setExpirationTime("5min")
       .sign(new TextEncoder().encode(JWT_SECRET!));
     return {
-      data: { token, user: { name: user.data.name, email: user.data.email } },
+      data: {
+        token,
+        user: {
+          name: user.data.name,
+          email: user.data.email,
+          id: user.data._id.toString(),
+        },
+      },
       error: {
         isError: false,
         message: "",
