@@ -10,17 +10,8 @@ import { ArrowDown } from "lucide-react";
 import ChatInput from "./chat-input";
 import type { IChat, Message } from "../types/data.types";
 import MessageBubble from "./message-bubble";
-
-// const REPLIES = [
-//   "That's interesting! Tell me more.",
-//   "I totally agree with you on that.",
-//   "Haha, nice one! 😄",
-//   "Let me think about that...",
-//   "Sounds like a plan! 🎉",
-//   "Got it, thanks for letting me know.",
-//   "I'll get back to you on that.",
-//   "That's awesome!",
-// ];
+import { useQuery } from "@tanstack/react-query";
+import { userQueries } from "../api/queries/user.queries";
 
 const ChatArea = ({
   socket,
@@ -34,6 +25,8 @@ const ChatArea = ({
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   // const [forwardTarget, setForwardTarget] = useState<Message | null>(null);
   // const [isDragOverChat, setIsDragOverChat] = useState(false);
+
+  const { data } = useQuery(userQueries.fetchMessages(currentChat?._id ?? ""));
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -101,11 +94,13 @@ const ChatArea = ({
         <div className="flex items-center gap-3">
           <div className="relative">
             <div className="w-10 h-10 rounded-full border border-gray-400 flex items-center justify-center text-sm font-semibold">
-              {currentChat.avatar}
+              {currentChat?.participants?.name?.charAt(0)?.toUpperCase()}
             </div>
           </div>
           <div>
-            <h2 className="font-semibold text-sm">{currentChat.name}</h2>
+            <h2 className="font-semibold text-sm">
+              {currentChat.participants.name}
+            </h2>
             {/* <p className="text-xs">
               {currentChat.online ? "Online" : "Offline"}
             </p> */}
@@ -146,11 +141,11 @@ const ChatArea = ({
       `,
           }}
         />
-        {[{ id: "", senderId: "" }].map((msg) => (
+        {data?.data.map((msg) => (
           <MessageBubble
-            key={msg.id}
+            key={msg._id}
             message={msg as Message}
-            isOwn={msg.senderId === currentChat._id}
+            isOwn={msg.senderId !== currentChat.participants.userId}
             onDragStart={() => {}}
           />
         ))}
@@ -172,7 +167,11 @@ const ChatArea = ({
         )}
       </AnimatePresence>
 
-      <ChatInput activeChatId={currentChat._id} socket={socket} />
+      <ChatInput
+        activeChatId={currentChat._id}
+        socket={socket}
+        receiverId={currentChat.participants.userId}
+      />
 
       {/* Forward modal */}
       {/* {forwardTarget && (

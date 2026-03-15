@@ -19,13 +19,10 @@ const ChatSidebar = ({
   const [showMenu, setShowMenu] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [email, setEmail] = useState("");
-  const [search, setSearch] = useState("");
+  // const [search, setSearch] = useState("");
+  const [filterdChats, setFilterdChats] = useState(chats);
 
   const { mutate } = useLogoutMutation();
-
-  const filtered = chats.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase()),
-  );
 
   const formatTime = (ts?: number | Date) => {
     if (!ts) return "";
@@ -39,11 +36,16 @@ const ChatSidebar = ({
 
   useEffect(() => {
     const handler = setTimeout(() => {
-      setSearch(query);
+      setFilterdChats(() => {
+        if (!query.length) return chats;
+        return chats.filter((c) =>
+          c.participants.name.toLowerCase().includes(query.toLowerCase()),
+        );
+      });
     }, 400);
 
     return () => clearTimeout(handler);
-  }, [query]);
+  }, [query, chats]);
 
   async function addToChat(email: string) {
     if (!email.trim()) return;
@@ -125,9 +127,9 @@ const ChatSidebar = ({
         className="flex-1 overflow-y-auto scrollbar-thin  border-b-2"
         onClick={handleChatClick}
       >
-        {filtered.map((chat, i) => (
+        {filterdChats.map((chat, i) => (
           <motion.button
-            key={i}
+            key={chat._id}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.05 }}
@@ -141,7 +143,7 @@ const ChatSidebar = ({
             {/* Avatar */}
             <div className="relative shrink-0">
               <div className="w-12 h-12 rounded-full border border-gray-400 flex items-center justify-center text-sm font-semibold">
-                {chat.avatar}
+                {chat.participants.name.charAt(0).toUpperCase()}
               </div>
             </div>
 
@@ -149,14 +151,16 @@ const ChatSidebar = ({
             <div className="flex-1 min-w-0 text-left">
               <div className="flex items-center justify-between">
                 <span className="font-medium text-sm truncate">
-                  {chat.name}
+                  {chat.participants.name}
                 </span>
                 <span className="text-[11px] ml-2 shrink-0">
-                  {formatTime(chat.lastMessageTime)}
+                  {formatTime(chat.lastMessage.time)}
                 </span>
               </div>
               <div className="flex items-center justify-between mt-0.5">
-                <span className="text-xs truncate">{chat.lastMessage}</span>
+                <span className="text-xs truncate">
+                  {chat.lastMessage.text}
+                </span>
                 {chat.unread > 0 && (
                   <span className="ml-2 shrink-0 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center">
                     {chat.unread}

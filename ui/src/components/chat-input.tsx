@@ -5,24 +5,26 @@ import { motion } from "framer-motion";
 const ChatInput = ({
   activeChatId,
   socket,
+  receiverId,
 }: {
   activeChatId: string;
   socket: RefObject<WebSocket | null>;
+  receiverId: string;
 }) => {
   const [text, setText] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSend = useCallback(() => {
-    if (!text.trim() || !activeChatId) return;
+    if (!text.trim() || !activeChatId || !receiverId) return;
     socket.current?.send(
       JSON.stringify({
         type: "SEND_MESSAGE",
-        data: { chatId: activeChatId, text: text.trim() },
+        data: { chatId: activeChatId, text: text.trim(), receiverId },
       }),
     );
     setText("");
     inputRef.current?.focus();
-  }, [text, activeChatId, socket]);
+  }, [text, activeChatId, socket, receiverId]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {

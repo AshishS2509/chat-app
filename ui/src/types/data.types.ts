@@ -1,5 +1,5 @@
 export interface Message {
-  id: string;
+  _id: string;
   chatId: string;
   senderId: string;
   text: string;
@@ -11,12 +11,16 @@ export interface Message {
 
 export interface IChat {
   _id: string;
-  name: string;
-  lastMessage: string;
-  lastMessageTime: Date;
-  unread: number;
   createdAt: Date;
-  email: string;
-  userId: string;
-  avatar: string;
+  participants: {
+    userId: string;
+    name: string;
+    email: string;
+  };
+  lastMessage: {
+    sender: string;
+    text: string;
+    time: number;
+  };
+  unread: number;
 }

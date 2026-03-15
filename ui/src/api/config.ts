@@ -6,6 +6,7 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       gcTime: Infinity,
+      refetchOnWindowFocus: false,
     },
     mutations: {
       gcTime: Infinity,
