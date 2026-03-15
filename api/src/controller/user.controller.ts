@@ -1,7 +1,6 @@
 import { User, type IUser } from "../db/users.schema.js";
 import bcrypt from "bcrypt";
 import type { IFunctionReturn } from "../types/types.js";
-import { Chat, type IChat } from "../db/chat.schema.js";
 
 export async function createUser({
   name,
@@ -65,40 +64,21 @@ export async function getUser({
   }
 }
 
-export async function addUserToChat({
-  email,
-  userId,
+export async function getUserById({
+  id,
 }: {
-  email: string;
-  userId: string;
-}): Promise<IFunctionReturn<IChat | null>> {
+  id: string;
+}): Promise<IFunctionReturn<IUser | null>> {
   try {
-    const chatUser = await User.findOne({ email });
-
-    if (!chatUser) {
-      throw new Error("User not found");
-    }
-    const avatar = chatUser.name.charAt(0).toUpperCase();
-    const chat = await Chat.create({
-      name: chatUser.name,
-      email: chatUser.email,
-      userId,
-      avatar,
-      unread: 0,
-    });
-    console.log(`Chat created with id ${chat._id} for user ${userId}`);
+    const user = await User.findById(id);
     return {
-      data: chat,
+      data: user,
       error: {
         isError: false,
         message: "",
       },
     };
-  } catch (error) {
-    console.error(
-      `Error adding user ${email} to chat for user ${userId}:`,
-      error,
-    );
+  } catch (error: any) {
     return {
       data: null,
       error: {
@@ -106,27 +86,7 @@ export async function addUserToChat({
         message:
           error instanceof Error
             ? error.message
-            : "An error occured while adding user to chat",
-      },
-    };
-  }
-}
-
-export async function getChats(userId: string) {
-  try {
-    const chats = await Chat.find({ userId }, null, {
-      sort: "-createdAt",
-    }).lean();
-    return {
-      data: chats,
-      results: chats.length,
-    };
-  } catch (error: any) {
-    return {
-      data: null,
-      error: {
-        isError: true,
-        message: "message" in error ? error.message : "DB Error",
+            : "An error occurred while retrieving the user",
       },
     };
   }

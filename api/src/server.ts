@@ -12,11 +12,16 @@ import type { IRequest } from "./types/types.js";
 import auth from "./routes/auth.routes.js";
 import { createServer } from "node:http";
 import WebSocket, { WebSocketServer } from "ws";
-import user from "./routes/user.routes.js";
-import { addUserToChat, getChats } from "./controller/user.controller.js";
+import chats from "./routes/chats.routes.js";
+import { addUserToChat, getChats } from "./controller/chat.controller.js";
+import { sendMessage } from "./controller/message.controller.js";
+import { getUser } from "./controller/user.controller.js";
+import message from "./routes/message.router.js";
 
 interface SocketMeta {
   id: string;
+  name: string;
+  email: string;
   [key: string]: any;
 }
 
@@ -63,7 +68,8 @@ app.use(async (req: IRequest, res: Response, next: NextFunction) => {
   }
 });
 
-app.use("/user", user);
+app.use("/user", chats);
+app.use("/messages", message);
 
 app.use((err: Error, req: IRequest, res: Response, next: NextFunction) => {
   console.error(err.stack);
@@ -117,7 +123,7 @@ wss.on("connection", async (socket: AuthedSocket, req) => {
       }),
     );
   } catch (error: any) {
-    console.error(error);
+    console.error(error.message);
 
     socket.close(
       1008,
@@ -146,22 +152,65 @@ wss.on("connection", async (socket: AuthedSocket, req) => {
 
       if (message.type === "SEND_MESSAGE") {
         const chatId = message.data.chatId;
+        const receiverId = message.data.receiverId;
         const text = message.data.text;
 
+        const data = await sendMessage({
+          userId: socket.meta.id,
+          chatId,
+          text,
+        });
+        wss.clients.forEach((cli: AuthedSocket) => {
+          if (cli.meta?.id === receiverId)
+            cli.send(
+              JSON.stringify({
+                type: "SEND_MESSAGE",
+                data: data.data?.toJSON(),
+              }),
+            );
+        });
         console.log(
           `User ${socket.meta.id} sent message to chat ${chatId} : ${text}`,
         );
       } else if (message.type === "NEW_CHAT") {
+        const user = await getUser({ email: message.data.email });
+        if (!user.data) throw Error("No user found!");
+
         const data = await addUserToChat({
-          email: message.data.email as string,
+          data: [
+            { ...socket.meta, userId: socket.meta.id },
+            {
+              userId: user.data._id.toString(),
+              email: user.data.email,
+              name: user.data.name,
+            },
+          ],
           userId: socket.meta.id,
         });
         if (data.error.isError) {
           socket.send(JSON.stringify({ error: "Error Adding user to chat." }));
         }
         socket.send(
-          JSON.stringify({ type: "NEW_CHAT", data: { success: true } }),
+          JSON.stringify({
+            type: "NEW_CHAT",
+            data: {
+              ...data.data?.toJSON(),
+              participants: data.data?.participants.filter(
+                (p) => p.userId !== socket.meta?.id,
+              )[0],
+            },
+          }),
         );
+        wss.clients.forEach((cli: AuthedSocket) => {
+          if (cli.meta?.id === user.data?._id.toString()) {
+            cli.send(
+              JSON.stringify({
+                type: "NEW_CHAT",
+                data: data.data,
+              }),
+            );
+          }
+        });
       }
     } catch (err) {
       console.error("Invalid WS message:", err);

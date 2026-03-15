@@ -1,11 +1,10 @@
 import { Router, type Response } from "express";
 import type { IRequest } from "../types/types.js";
-import { Chat } from "../db/chat.schema.js";
-import { getChats } from "../controller/user.controller.js";
+import { getChats } from "../controller/chat.controller.js";
 
-const user = Router();
+const chats = Router();
 
-user.get("/chats", async (req: IRequest, res: Response) => {
+chats.get("/chats", async (req: IRequest, res: Response) => {
   const userId = req.meta?.id;
   if (!userId) return res.status(401).end();
   const chats = await getChats(userId);
@@ -13,4 +12,4 @@ user.get("/chats", async (req: IRequest, res: Response) => {
   res.status(200).json(chats).end();
 });
 
-export default user;
+export default chats;
