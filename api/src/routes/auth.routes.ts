@@ -25,7 +25,12 @@ auth.post(
 
     res
       .status(200)
-      .cookie("token", data?.token, { httpOnly: false })
+      .cookie("token", data?.token, {
+        httpOnly: true,
+        sameSite: "none",
+        secure: true,
+        path: "/",
+      })
       .json({ user: data?.user })
       .end();
   },

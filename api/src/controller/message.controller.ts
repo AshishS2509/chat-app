@@ -43,7 +43,7 @@ export async function sendMessage({
 export async function getMesages(chatId: string) {
   try {
     const messages = await Message.find({ chatId }, null, {
-      sort: "-createdAt",
+      sort: "timestamp",
       limit: 100,
     });
     return {

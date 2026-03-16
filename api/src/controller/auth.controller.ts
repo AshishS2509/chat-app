@@ -57,6 +57,7 @@ export async function login({
       },
     };
   } catch (error) {
+    console.log(error);
     return {
       data: null,
       error: {

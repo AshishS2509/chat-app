@@ -37,10 +37,11 @@ dotenv.config({ quiet: true });
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: ["http://localhost:5173", "http://192.168.31.195:5173"],
     credentials: true,
   }),
 );
+
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -52,6 +53,7 @@ app.use("/", auth);
 app.use(async (req: IRequest, res: Response, next: NextFunction) => {
   try {
     const token = req.cookies.token;
+
     if (!token) {
       return res.status(401).json({ error: "Unauthorized" });
     }
@@ -161,6 +163,7 @@ wss.on("connection", async (socket: AuthedSocket, req) => {
           text,
         });
         wss.clients.forEach((cli: AuthedSocket) => {
+          console.log(cli.meta?.id, receiverId);
           if (cli.meta?.id === receiverId)
             cli.send(
               JSON.stringify({
