@@ -30,6 +30,7 @@ const Index = () => {
       const parsedData: { type: string; data: IChat | Message } = JSON.parse(
         ev.data,
       );
+      console.log(parsedData);
       if (parsedData.type === "NEW_CHAT") {
         const newChat = parsedData.data as IChat;
         queryClient.setQueryData(userQueries.getChatList().queryKey, (prev) => {
@@ -41,10 +42,10 @@ const Index = () => {
         });
       }
       if (parsedData.type === "SEND_MESSAGE") {
-        if (!currentChat?._id) return;
         const newMessage = parsedData.data as Message;
+        console.log(newMessage);
         queryClient.setQueryData(
-          userQueries.fetchMessages(currentChat?._id).queryKey,
+          userQueries.fetchMessages(newMessage.chatId).queryKey,
           (prev) => {
             if (!prev) return prev;
             return {
@@ -57,10 +58,10 @@ const Index = () => {
     });
 
     ws.addEventListener("close", () => {
-      setUserData({ email: "", name: "", isLoggedIn: false });
+      setUserData({ _id: "", email: "", name: "", isLoggedIn: false });
       navigate("/login");
     });
-  }, [currentChat?._id, navigate]);
+  }, [navigate]);
 
   function handleCurrentChat(id: string) {
     const chat = data?.data.find((i) => i._id === id);

@@ -27,10 +27,12 @@ const ChatArea = ({
   // const [isDragOverChat, setIsDragOverChat] = useState(false);
 
   const { data } = useQuery(userQueries.fetchMessages(currentChat?._id ?? ""));
-
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, []);
+    if (!data) return;
+    if (containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
+  }, [data]);
 
   useEffect(() => {
     scrollToBottom();
@@ -131,6 +133,7 @@ const ChatArea = ({
         className="flex-1 overflow-y-auto px-6 py-4 w-full bg-[#fffafc] relative"
       >
         <div
+          ref={messagesEndRef}
           className="absolute inset-0 z-0"
           style={{
             backgroundImage: `
@@ -149,7 +152,6 @@ const ChatArea = ({
             onDragStart={() => {}}
           />
         ))}
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Scroll to bottom */}
@@ -171,6 +173,7 @@ const ChatArea = ({
         activeChatId={currentChat._id}
         socket={socket}
         receiverId={currentChat.participants.userId}
+        scrollToBottom={scrollToBottom}
       />
 
       {/* Forward modal */}

@@ -1,30 +1,56 @@
 import { useState, useRef, useCallback, type RefObject } from "react";
 import { Send, Smile } from "lucide-react";
 import { motion } from "framer-motion";
+import { queryClient } from "../api/config";
+import { userQueries } from "../api/queries/user.queries";
+import { createLocalMongoId } from "../lib/utils";
+import { getUserData } from "../lib/user.localStorage";
 
 const ChatInput = ({
   activeChatId,
   socket,
   receiverId,
+  scrollToBottom,
 }: {
   activeChatId: string;
   socket: RefObject<WebSocket | null>;
   receiverId: string;
+  scrollToBottom: () => void;
 }) => {
   const [text, setText] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSend = useCallback(() => {
     if (!text.trim() || !activeChatId || !receiverId) return;
+    queryClient.setQueryData(
+      userQueries.fetchMessages(activeChatId).queryKey,
+      (prev) => {
+        return {
+          data: [
+            ...(prev?.data ?? []),
+            {
+              _id: createLocalMongoId(),
+              chatId: activeChatId,
+              senderId: getUserData()._id,
+              text: text.trim(),
+              timestamp: Date.now(),
+            },
+          ],
+          results: (prev?.results ?? 0) + 1,
+        };
+      },
+    );
     socket.current?.send(
       JSON.stringify({
         type: "SEND_MESSAGE",
         data: { chatId: activeChatId, text: text.trim(), receiverId },
       }),
     );
+
     setText("");
     inputRef.current?.focus();
-  }, [text, activeChatId, socket, receiverId]);
+    scrollToBottom();
+  }, [text, activeChatId, socket, receiverId, scrollToBottom]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {

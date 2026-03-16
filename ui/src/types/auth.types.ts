@@ -4,6 +4,7 @@ export type TLogin = {
 };
 
 export type TUser = {
+  _id: string;
   name: string;
   email: string;
   isLoggedIn?: boolean;

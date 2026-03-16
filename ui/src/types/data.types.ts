@@ -4,7 +4,7 @@ export interface Message {
   senderId: string;
   text: string;
   timestamp: number;
-  type: "text" | "image" | "video";
+  type?: "text" | "image" | "video";
   forwarded?: boolean;
   forwardedFrom?: string;
 }
