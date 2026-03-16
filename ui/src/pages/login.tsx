@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useLoginMutation } from "../api/mutations/auth.mutations";
 import { useNavigate } from "react-router";
-import { getUserData } from "../lib/user.localStorage";
 import { AnimatePresence, motion } from "framer-motion";
+import { useAuth } from "../hooks/useAuth";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { mutate, isPending } = useLoginMutation();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
@@ -16,9 +17,9 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
-    const user = getUserData();
+    console.log(user?.isLoggedIn);
     if (user?.isLoggedIn) navigate("/");
-  }, [navigate]);
+  }, [navigate, user]);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">

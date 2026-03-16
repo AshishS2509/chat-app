@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { queryClient } from "../api/config";
 import { userQueries } from "../api/queries/user.queries";
 import { createLocalMongoId } from "../lib/utils";
-import { getUserData } from "../lib/user.localStorage";
+import { useAuth } from "../hooks/useAuth";
 
 const ChatInput = ({
   activeChatId,
@@ -19,9 +19,10 @@ const ChatInput = ({
 }) => {
   const [text, setText] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const { user } = useAuth();
 
   const handleSend = useCallback(() => {
-    if (!text.trim() || !activeChatId || !receiverId) return;
+    if (!text.trim() || !activeChatId || !receiverId || !user) return;
     queryClient.setQueryData(
       userQueries.fetchMessages(activeChatId).queryKey,
       (prev) => {
@@ -31,7 +32,7 @@ const ChatInput = ({
             {
               _id: createLocalMongoId(),
               chatId: activeChatId,
-              senderId: getUserData()._id,
+              senderId: user._id,
               text: text.trim(),
               timestamp: Date.now(),
             },
@@ -50,7 +51,7 @@ const ChatInput = ({
     setText("");
     inputRef.current?.focus();
     scrollToBottom();
-  }, [text, activeChatId, socket, receiverId, scrollToBottom]);
+  }, [text, activeChatId, socket, receiverId, scrollToBottom, user]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {

@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { getUserData } from "../lib/user.localStorage";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRegisterMutation } from "../api/mutations/auth.mutations";
+import { useAuth } from "../hooks/useAuth";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
   const { mutate, isPending } = useRegisterMutation();
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -32,9 +33,8 @@ export default function RegisterPage() {
   };
 
   useEffect(() => {
-    const user = getUserData();
     if (user?.isLoggedIn) navigate("/");
-  }, [navigate]);
+  }, [navigate, user]);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">

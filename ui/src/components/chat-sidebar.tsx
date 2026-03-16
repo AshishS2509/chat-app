@@ -1,8 +1,9 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, MessageSquarePlus, EllipsisVertical, X } from "lucide-react";
 import { useEffect, useState, type RefObject } from "react";
-import { useLogoutMutation } from "../api/mutations/auth.mutations";
 import type { IChat } from "../types/data.types";
+import { useAuth } from "../hooks/useAuth";
+import { useNavigate } from "react-router";
 
 const ChatSidebar = ({
   socket,
@@ -21,8 +22,8 @@ const ChatSidebar = ({
   const [email, setEmail] = useState("");
   // const [search, setSearch] = useState("");
   const [filterdChats, setFilterdChats] = useState(chats);
-
-  const { mutate } = useLogoutMutation();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
 
   const formatTime = (ts?: number | Date) => {
     if (!ts) return "";
@@ -53,7 +54,8 @@ const ChatSidebar = ({
   }
 
   function onLogout() {
-    mutate();
+    logout();
+    navigate("/login");
   }
 
   function handleChatClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {

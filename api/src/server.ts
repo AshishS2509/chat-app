@@ -52,7 +52,7 @@ app.use("/", auth);
 
 app.use(async (req: IRequest, res: Response, next: NextFunction) => {
   try {
-    const token = req.cookies.token;
+    const token = req.headers.authorization?.split(" ")[1];
 
     if (!token) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -82,8 +82,8 @@ app.use((req: IRequest, res: Response) => {
   res.status(404).json({ error: "Not Found" });
 });
 
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+server.listen(Number(PORT), "192.168.31.195", () => {
+  console.log(`Server running on http://192.168.31.195:${PORT}`);
 });
 
 const wss = new WebSocketServer({ server, path: "/wss" });
@@ -94,15 +94,8 @@ wss.on("listening", () => {
 
 wss.on("connection", async (socket: AuthedSocket, req) => {
   try {
-    const cookies: Record<string, string> = {};
-
-    (req.headers.cookie || "").split(";").forEach((cookie) => {
-      const [key, ...v] = cookie.trim().split("=");
-      if (!key) return;
-      cookies[key] = decodeURIComponent(v.join("="));
-    });
-
-    const token = cookies.token;
+    const url = new URL(req.url!, "http://localhost");
+    const token = url.searchParams.get("token");
 
     if (!token) throw new Error("Unauthorized");
 
@@ -115,6 +108,7 @@ wss.on("connection", async (socket: AuthedSocket, req) => {
     socket.meta = {
       ...data,
     };
+    console.log("Client Connected: ", socket.meta.id);
 
     const chats = await getChats(data.id);
 

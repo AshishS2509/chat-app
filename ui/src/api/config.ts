@@ -1,6 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { setUserData } from "../lib/user.localStorage";
+import { getStoredAuth } from "../hooks/useAuth";
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -15,19 +15,21 @@ export const queryClient = new QueryClient({
 });
 
 const api = axios.create({
-  baseURL: "http://localhost:3000",
-  withCredentials: true,
+  baseURL: "http://192.168.31.195:3000",
 });
 
-api.interceptors.response.use(
-  (d) => d,
-  (err) => {
-    if (err.status === 401) {
-      setUserData({ name: "", email: "", isLoggedIn: false });
-      window.location.pathname = "/login";
-      return;
+api.interceptors.request.use(
+  (config) => {
+    const accessToken = getStoredAuth().accessToken;
+
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
-    return err;
+
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   },
 );
 

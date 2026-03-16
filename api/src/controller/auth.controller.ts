@@ -17,6 +17,7 @@ export async function login({
 }): Promise<
   IFunctionReturn<{
     token: string;
+    refresh: string;
     user: { name: string; email: string; id: string };
   } | null>
 > {
@@ -42,9 +43,19 @@ export async function login({
       .setProtectedHeader({ alg: "HS256" })
       .setExpirationTime("5min")
       .sign(new TextEncoder().encode(JWT_SECRET!));
+
+    const refresh = await new SignJWT({
+      id: user.data._id.toString(),
+      email: user.data.email,
+      name: user.data.name,
+    })
+      .setProtectedHeader({ alg: "HS256" })
+      .setExpirationTime("7 days")
+      .sign(new TextEncoder().encode(JWT_SECRET!));
     return {
       data: {
         token,
+        refresh,
         user: {
           name: user.data.name,
           email: user.data.email,
@@ -97,6 +108,47 @@ export async function verifyToken(
           error instanceof Error
             ? error.message
             : "An error occurred during token verification",
+      },
+    };
+  }
+}
+
+export async function refresh(refresh: string): Promise<
+  IFunctionReturn<{
+    token: string;
+  } | null>
+> {
+  try {
+    const {
+      payload,
+    }: { payload: { name: string; email: string; id: string } } =
+      await jwtVerify(refresh, new TextEncoder().encode(JWT_SECRET!));
+    const token = await new SignJWT({
+      id: payload.id,
+      email: payload.email,
+      name: payload.name,
+    })
+      .setProtectedHeader({ alg: "HS256" })
+      .setExpirationTime("5min")
+      .sign(new TextEncoder().encode(JWT_SECRET!));
+    return {
+      data: {
+        token,
+      },
+      error: {
+        isError: false,
+        message: "",
+      },
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: {
+        isError: true,
+        message:
+          error instanceof Error
+            ? error.message
+            : "An error occurred during refresh",
       },
     };
   }

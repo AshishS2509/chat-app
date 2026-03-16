@@ -1,7 +1,7 @@
 import { Router, type Response } from "express";
 import type { IRequest } from "../types/types.js";
 import { createUser } from "../controller/user.controller.js";
-import { login } from "../controller/auth.controller.js";
+import { login, refresh } from "../controller/auth.controller.js";
 
 const auth = Router();
 
@@ -25,13 +25,7 @@ auth.post(
 
     res
       .status(200)
-      .cookie("token", data?.token, {
-        httpOnly: true,
-        sameSite: "none",
-        secure: true,
-        path: "/",
-      })
-      .json({ user: data?.user })
+      .json({ ...data })
       .end();
   },
 );
@@ -49,14 +43,24 @@ auth.post(
     }
     res
       .status(200)
-      .cookie("token", data?.token, { httpOnly: false })
-      .json({ user: data?.user })
+      .json({ ...data })
       .end();
   },
 );
 
-auth.post("/logout", (req: IRequest, res: Response) => {
-  res.clearCookie("token").json({ message: "Logged out successfully" }).end();
-});
-
+auth.post(
+  "/refresh",
+  async (req: IRequest<null, { refreshToken: string }>, res: Response) => {
+    const { refreshToken } = req.body;
+    // Assuming you have a refreshToken function in auth.controller
+    const { data, error } = await refresh(refreshToken);
+    if (error.isError) {
+      return res.status(400).json({ error: error.message });
+    }
+    res
+      .status(200)
+      .json({ ...data })
+      .end();
+  },
+);
 export default auth;
