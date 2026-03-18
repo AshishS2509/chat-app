@@ -22,8 +22,7 @@ const ForwardModal = ({ message, onClose }: Props) => {
   };
   const otherChats = chats.filter((c) => c.id !== message.chatId);
 
-  const handleForward = (toChatId: string) => {
-    console.log(toChatId);
+  const handleForward = () => {
     onClose();
   };
 
@@ -58,7 +57,7 @@ const ForwardModal = ({ message, onClose }: Props) => {
           {otherChats.map((chat) => (
             <button
               key={chat.id}
-              onClick={() => handleForward(chat.id)}
+              onClick={() => handleForward()}
               className="w-full flex items-center gap-3 p-3 rounded-xl transition-colors"
             >
               <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold">

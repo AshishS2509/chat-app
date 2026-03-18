@@ -70,7 +70,7 @@ app.use(async (req: IRequest, res: Response, next: NextFunction) => {
   }
 });
 
-app.use("/user", chats);
+app.use("/chat", chats);
 app.use("/messages", message);
 
 app.use((err: Error, req: IRequest, res: Response, next: NextFunction) => {
@@ -203,7 +203,12 @@ wss.on("connection", async (socket: AuthedSocket, req) => {
             cli.send(
               JSON.stringify({
                 type: "NEW_CHAT",
-                data: data.data,
+                data: {
+                  ...data.data?.toJSON(),
+                  participants: data.data?.participants.filter(
+                    (p) => p.userId === socket.meta?.id,
+                  )[0],
+                },
               }),
             );
           }

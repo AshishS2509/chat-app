@@ -20,7 +20,7 @@ const MessageBubble = ({ message, isOwn, onDragStart }: Props) => {
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ type: "spring", stiffness: 400, damping: 30 }}
-      className={`flex ${isOwn ? "justify-end" : "justify-start"} mb-2 group px-12`}
+      className={`flex ${isOwn ? "justify-end" : "justify-start"} mb-2 group px-4`}
     >
       <div
         className={`relative max-w-[70%] ${isOwn ? "bg-fuchsia-100" : "bg-gray-200"} rounded-2xl px-4 `}

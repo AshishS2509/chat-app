@@ -1,28 +1,32 @@
-import { useState, useRef, useCallback, type RefObject } from "react";
+import { useState, useRef, useCallback, useContext } from "react";
 import { Send, Smile } from "lucide-react";
 import { motion } from "framer-motion";
 import { queryClient } from "../api/config";
 import { userQueries } from "../api/queries/user.queries";
 import { createLocalMongoId } from "../lib/utils";
-import { useAuth } from "../hooks/useAuth";
+import { AuthContext } from "../hooks/useAuth";
 
 const ChatInput = ({
   activeChatId,
-  socket,
   receiverId,
   scrollToBottom,
 }: {
   activeChatId: string;
-  socket: RefObject<WebSocket | null>;
   receiverId: string;
   scrollToBottom: () => void;
 }) => {
   const [text, setText] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const { user } = useAuth();
+  const context = useContext(AuthContext);
 
   const handleSend = useCallback(() => {
-    if (!text.trim() || !activeChatId || !receiverId || !user) return;
+    if (!text.trim() || !activeChatId || !receiverId) return;
+    context?.socket.current?.send(
+      JSON.stringify({
+        type: "SEND_MESSAGE",
+        data: { chatId: activeChatId, receiverId, text: text.trim() },
+      }),
+    );
     queryClient.setQueryData(
       userQueries.fetchMessages(activeChatId).queryKey,
       (prev) => {
@@ -32,7 +36,7 @@ const ChatInput = ({
             {
               _id: createLocalMongoId(),
               chatId: activeChatId,
-              senderId: user._id,
+              senderId: context?.user?._id ?? "",
               text: text.trim(),
               timestamp: Date.now(),
             },
@@ -41,17 +45,11 @@ const ChatInput = ({
         };
       },
     );
-    socket.current?.send(
-      JSON.stringify({
-        type: "SEND_MESSAGE",
-        data: { chatId: activeChatId, text: text.trim(), receiverId },
-      }),
-    );
 
     setText("");
     inputRef.current?.focus();
     scrollToBottom();
-  }, [text, activeChatId, socket, receiverId, scrollToBottom, user]);
+  }, [text, activeChatId, receiverId, context, scrollToBottom]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {

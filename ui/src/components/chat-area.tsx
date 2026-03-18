@@ -1,32 +1,29 @@
-import {
-  useRef,
-  useEffect,
-  useState,
-  useCallback,
-  type RefObject,
-} from "react";
+import { useRef, useEffect, useState, useCallback, useContext } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowDown } from "lucide-react";
 import ChatInput from "./chat-input";
-import type { IChat, Message } from "../types/data.types";
+import type { Message } from "../types/data.types";
 import MessageBubble from "./message-bubble";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import { userQueries } from "../api/queries/user.queries";
+import { AuthContext } from "../hooks/useAuth";
+import { queryClient } from "../api/config";
+import { useNavigate } from "react-router";
 
-const ChatArea = ({
-  socket,
-  currentChat,
-}: {
-  socket: RefObject<WebSocket | null>;
-  currentChat: IChat | null;
-}) => {
+const ChatArea = ({ currentChatId }: { currentChatId: string }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
-  // const [forwardTarget, setForwardTarget] = useState<Message | null>(null);
-  // const [isDragOverChat, setIsDragOverChat] = useState(false);
+  const context = useContext(AuthContext);
+  const navigate = useNavigate();
 
-  const { data } = useQuery(userQueries.fetchMessages(currentChat?._id ?? ""));
+  const res = useQueries({
+    queries: [
+      userQueries.fetchMessages(currentChatId as string),
+      userQueries.getChat(currentChatId as string),
+    ],
+  });
+  const [data, currentChat] = res;
   const scrollToBottom = useCallback(() => {
     if (!data) return;
     if (containerRef.current) {
@@ -34,32 +31,54 @@ const ChatArea = ({
     }
   }, [data]);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [scrollToBottom]);
-
   const handleScroll = () => {
     if (!containerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
     setShowScrollBtn(scrollHeight - scrollTop - clientHeight > 100);
   };
 
-  // const handleDragOver = (e: React.DragEvent) => {
-  //   e.preventDefault();
-  //   setIsDragOverChat(true);
-  // };
+  useEffect(() => {
+    if (!context?.socket.current) return navigate("/") as void;
+    context.socket.current?.addEventListener("message", (ev) => {
+      const parsedData = JSON.parse(ev.data);
 
-  // const handleDrop = (e: React.DragEvent) => {
-  //   e.preventDefault();
-  //   setIsDragOverChat(false);
-  //   const msgData = e.dataTransfer.getData("message");
-  //   if (msgData) {
-  //     const msg = JSON.parse(msgData) as Message;
-  //     setForwardTarget(msg);
-  //   }
-  // };
+      if (parsedData.type === "NEW_CHAT") {
+        const newChat = parsedData.data;
 
-  if (!currentChat) {
+        queryClient.setQueryData(userQueries.getChatList().queryKey, (prev) => {
+          if (!prev) return prev;
+
+          return {
+            data: [newChat, ...prev.data],
+            results: prev.results + 1,
+          };
+        });
+      }
+
+      if (parsedData.type === "SEND_MESSAGE") {
+        const newMessage = parsedData.data;
+
+        queryClient.setQueryData(
+          userQueries.fetchMessages(newMessage.chatId).queryKey,
+          (prev) => {
+            if (!prev) return prev;
+
+            return {
+              data: [...prev.data, newMessage],
+              results: (prev.results ?? 0) + 1,
+            };
+          },
+        );
+      }
+      scrollToBottom();
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!currentChat.isFetching && !data.isFetching) scrollToBottom();
+  }, [currentChat.isFetching, data.isFetching]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!currentChatId && !currentChat.isFetching && !data.isFetching) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
@@ -86,22 +105,19 @@ const ChatArea = ({
   }
 
   return (
-    <div
-      className="flex-1 flex flex-col relative"
-      // onDragOver={handleDragOver}
-      // onDragLeave={() => setIsDragOverChat(false)}
-      // onDrop={handleDrop}
-    >
+    <div className="flex-1 flex flex-col relative">
       <div className="px-6 py-3.5 flex items-center justify-between bg-gray-200">
         <div className="flex items-center gap-3">
           <div className="relative">
             <div className="w-10 h-10 rounded-full border border-gray-400 flex items-center justify-center text-sm font-semibold">
-              {currentChat?.participants?.name?.charAt(0)?.toUpperCase()}
+              {currentChat.data?.data?.participants?.name
+                ?.charAt(0)
+                ?.toUpperCase()}
             </div>
           </div>
           <div>
             <h2 className="font-semibold text-sm">
-              {currentChat.participants.name}
+              {currentChat.data?.data.participants.name}
             </h2>
             {/* <p className="text-xs">
               {currentChat.online ? "Online" : "Offline"}
@@ -110,27 +126,10 @@ const ChatArea = ({
         </div>
       </div>
 
-      {/* Drop overlay */}
-      {/* <AnimatePresence>
-        {isDragOverChat && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 z-20 border-2 border-dashed rounded-lg flex items-center justify-center pointer-events-none"
-          >
-            <span className="font-semibold text-lg">
-              Drop to forward message
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence> */}
-
-      {/* Messages */}
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-6 py-4 w-full bg-[#fffafc] relative"
+        className="flex-1 overflow-y-auto px-0 py-4 w-full bg-[#fffafc] relative"
       >
         <div
           ref={messagesEndRef}
@@ -144,17 +143,16 @@ const ChatArea = ({
       `,
           }}
         />
-        {data?.data.map((msg) => (
+        {data.data?.data.map((msg) => (
           <MessageBubble
             key={msg._id}
             message={msg as Message}
-            isOwn={msg.senderId !== currentChat.participants.userId}
+            isOwn={msg.senderId !== currentChat.data?.data.participants.userId}
             onDragStart={() => {}}
           />
         ))}
       </div>
 
-      {/* Scroll to bottom */}
       <AnimatePresence>
         {showScrollBtn && (
           <motion.button
@@ -169,20 +167,13 @@ const ChatArea = ({
         )}
       </AnimatePresence>
 
-      <ChatInput
-        activeChatId={currentChat._id}
-        socket={socket}
-        receiverId={currentChat.participants.userId}
-        scrollToBottom={scrollToBottom}
-      />
-
-      {/* Forward modal */}
-      {/* {forwardTarget && (
-        <ForwardModal
-          message={forwardTarget}
-          onClose={() => setForwardTarget(null)}
+      {currentChatId && currentChat.data?.data.participants.userId && (
+        <ChatInput
+          activeChatId={currentChatId}
+          receiverId={currentChat.data?.data.participants.userId}
+          scrollToBottom={scrollToBottom}
         />
-      )} */}
+      )}
     </div>
   );
 };

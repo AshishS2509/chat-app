@@ -34,10 +34,17 @@ export async function getChats(userId: string) {
   }
 }
 
-export async function getChat(id: string) {
+export async function getChat(id: string, userId: string) {
   try {
-    const chat = await Chat.findById(id).lean();
-    if (!chat) throw Error("No record found");
+    const data = await Chat.findById(id).lean();
+
+    if (!data) throw Error("No record found");
+
+    const chat = {
+      ...data,
+      participants: data.participants.find((p) => p.userId !== userId),
+    };
+
     return {
       data: chat,
       error: {

@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { createContext, useState, type RefObject } from "react";
 import type { TUser } from "../types/auth.types";
 
-const AUTH_STORAGE_KEY = "auth_data";
+const REFRESH_TOKEN_KEY = "refresh_token";
 
 type AuthState = {
   accessToken: string | null;
@@ -9,34 +9,36 @@ type AuthState = {
   user: TUser | null;
 };
 
-export const getStoredAuth = (): AuthState => {
-  if (typeof window === "undefined") {
-    return { accessToken: null, refreshToken: null, user: null };
-  }
-
-  const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-
-  if (!stored) {
-    return { accessToken: null, refreshToken: null, user: null };
-  }
-
-  return JSON.parse(stored);
+const getStoredRefreshToken = (): string | null => {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(REFRESH_TOKEN_KEY);
 };
 
-const setStoredAuth = (data: AuthState) => {
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(data));
+const setStoredRefreshToken = (token: string) => {
+  localStorage.setItem(REFRESH_TOKEN_KEY, token);
 };
 
-const clearStoredAuth = () => {
-  localStorage.removeItem(AUTH_STORAGE_KEY);
+const clearStoredRefreshToken = () => {
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
 };
 
 export const useAuth = () => {
-  const [auth, setAuth] = useState<AuthState>(getStoredAuth());
+  const [auth, setAuth] = useState<AuthState>({
+    accessToken: null,
+    refreshToken: getStoredRefreshToken(),
+    user: null,
+  });
 
-  const login = (data: AuthState) => {
-    setAuth(data);
-    setStoredAuth(data);
+  const login = ({ accessToken, refreshToken, user }: AuthState) => {
+    setAuth({
+      accessToken,
+      refreshToken,
+      user,
+    });
+
+    if (refreshToken) {
+      setStoredRefreshToken(refreshToken);
+    }
   };
 
   const logout = () => {
@@ -46,31 +48,30 @@ export const useAuth = () => {
       user: null,
     });
 
-    clearStoredAuth();
+    clearStoredRefreshToken();
   };
 
   const updateAccessToken = (accessToken: string) => {
-    setAuth((prev) => {
-      const updated = { ...prev, accessToken };
-      setStoredAuth(updated);
-      return updated;
-    });
+    setAuth((prev) => ({
+      ...prev,
+      accessToken,
+    }));
   };
 
   const updateRefreshToken = (refreshToken: string) => {
-    setAuth((prev) => {
-      const updated = { ...prev, refreshToken };
-      setStoredAuth(updated);
-      return updated;
-    });
+    setAuth((prev) => ({
+      ...prev,
+      refreshToken,
+    }));
+
+    setStoredRefreshToken(refreshToken);
   };
 
   const updateUser = (user: TUser) => {
-    setAuth((prev) => {
-      const updated = { ...prev, user };
-      setStoredAuth(updated);
-      return updated;
-    });
+    setAuth((prev) => ({
+      ...prev,
+      user,
+    }));
   };
 
   return {
@@ -82,3 +83,7 @@ export const useAuth = () => {
     updateUser,
   };
 };
+
+export const AuthContext = createContext<
+  (ReturnType<typeof useAuth> & { socket: RefObject<WebSocket | null> }) | null
+>(null);

@@ -1,19 +1,17 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, MessageSquarePlus, EllipsisVertical, X } from "lucide-react";
-import { useEffect, useState, type RefObject } from "react";
+import { useContext, useEffect, useState } from "react";
 import type { IChat } from "../types/data.types";
-import { useAuth } from "../hooks/useAuth";
-import { useNavigate } from "react-router";
+import { AuthContext } from "../hooks/useAuth";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 
 const ChatSidebar = ({
-  socket,
   chats,
   active,
   handleCurrentChat,
 }: {
-  socket: RefObject<WebSocket | null>;
   chats: IChat[];
-  active: string;
+  active: string | null;
   handleCurrentChat: (id: string) => void;
 }) => {
   const [query, setQuery] = useState("");
@@ -22,8 +20,8 @@ const ChatSidebar = ({
   const [email, setEmail] = useState("");
   // const [search, setSearch] = useState("");
   const [filterdChats, setFilterdChats] = useState(chats);
-  const { logout } = useAuth();
-  const navigate = useNavigate();
+  const context = useContext(AuthContext);
+  const { isLaptop } = useMediaQuery();
 
   const formatTime = (ts?: number | Date) => {
     if (!ts) return "";
@@ -50,12 +48,11 @@ const ChatSidebar = ({
 
   async function addToChat(email: string) {
     if (!email.trim()) return;
-    socket.current?.send(JSON.stringify({ type: "NEW_CHAT", data: { email } }));
+    // send(JSON.stringify({ type: "NEW_CHAT", data: { email } }));
   }
 
   function onLogout() {
-    logout();
-    navigate("/login");
+    context?.logout();
   }
 
   function handleChatClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
@@ -67,7 +64,7 @@ const ChatSidebar = ({
     handleCurrentChat(chatId);
   }
   return (
-    <div className="w-80 h-full flex flex-col">
+    <div className={`${isLaptop ? "w-80" : "w-full"} h-full flex flex-col`}>
       {/* Header */}
       <div className="p-4 flex items-center justify-between">
         <h1 className="text-xl font-bold">Messages</h1>

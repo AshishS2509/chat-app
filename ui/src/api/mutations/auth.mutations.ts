@@ -1,8 +1,8 @@
 import { useMutation } from "@tanstack/react-query";
 import api from "../config";
-import { useNavigate } from "react-router";
 import type { TLogin, TRegisterUser, TUser } from "../../types/auth.types";
-import { useAuth } from "../../hooks/useAuth";
+import { AuthContext } from "../../hooks/useAuth";
+import { useContext } from "react";
 
 ///////////////////////////////// API calls /////////////////////////////////
 
@@ -36,20 +36,18 @@ async function login({ email, password }: TLogin) {
 ////////////////////////////// Mutations /////////////////////////////
 
 export const useRegisterMutation = () => {
-  const navigate = useNavigate();
-  const { login } = useAuth();
+  const context = useContext(AuthContext);
   const { mutate, isPending } = useMutation({
     mutationFn: registerUser,
     onSuccess: (
       data: { refresh: string; user: TUser; token: string } | null,
     ) => {
       if (data) {
-        login({
+        context?.login({
           accessToken: data.token,
           refreshToken: data.refresh,
-          user: { ...data.user, isLoggedIn: true },
+          user: { ...data.user },
         });
-        navigate("/");
       }
     },
     onError: (e) => {
@@ -62,20 +60,18 @@ export const useRegisterMutation = () => {
 };
 
 export const useLoginMutation = () => {
-  const navigate = useNavigate();
-  const { login: loginFn } = useAuth();
+  const context = useContext(AuthContext);
   const { mutate, isPending } = useMutation({
     mutationFn: login,
     onSuccess: (
       data: { user: TUser; refresh: string; token: string } | null,
     ) => {
       if (data) {
-        loginFn({
+        context?.login({
           accessToken: data.token,
           refreshToken: data.refresh,
-          user: { ...data.user, isLoggedIn: true },
+          user: { ...data.user },
         });
-        navigate("/");
       }
     },
     onError: (e) => {

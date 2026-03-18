@@ -6,6 +6,7 @@ import ConfigProvider from "./config";
 import LoginPage from "./pages/login";
 import RegisterPage from "./pages/register";
 import { queryClient } from "./api/config";
+import MobileChatPage from "./pages/mobile-chat-page";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <ConfigProvider>
           <Routes>
             <Route path="/" element={<ChatPage />} />
+            <Route path="/chat/:id" element={<MobileChatPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="*" element={<NotFound />} />

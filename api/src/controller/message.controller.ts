@@ -11,7 +11,7 @@ export async function sendMessage({
   text: string;
 }) {
   try {
-    const chat = await getChat(chatId);
+    const chat = await getChat(chatId, userId);
     if (chat.error.isError || !chat.data) throw Error("Chat not found");
     const sender = userId;
 
