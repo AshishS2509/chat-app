@@ -10,7 +10,7 @@ import { AuthContext } from "../hooks/useAuth";
 import { queryClient } from "../api/config";
 import { useNavigate } from "react-router";
 
-const ChatArea = ({ currentChatId }: { currentChatId: string }) => {
+const ChatArea = ({ currentChatId }: { currentChatId: string | null }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
@@ -19,8 +19,8 @@ const ChatArea = ({ currentChatId }: { currentChatId: string }) => {
 
   const res = useQueries({
     queries: [
-      userQueries.fetchMessages(currentChatId as string),
-      userQueries.getChat(currentChatId as string),
+      userQueries.fetchMessages(currentChatId),
+      userQueries.getChat(currentChatId),
     ],
   });
   const [data, currentChat] = res;
@@ -167,7 +167,7 @@ const ChatArea = ({ currentChatId }: { currentChatId: string }) => {
         )}
       </AnimatePresence>
 
-      {currentChatId && currentChat.data?.data.participants.userId && (
+      {currentChat.data?.data.participants.userId && (
         <ChatInput
           activeChatId={currentChatId}
           receiverId={currentChat.data?.data.participants.userId}

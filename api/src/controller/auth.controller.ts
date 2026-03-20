@@ -1,12 +1,8 @@
 import { timingSafeEqual } from "crypto";
-import { getUser } from "./user.controller.js";
+import { getUserByEmail } from "./user.controller.js";
 import bcrypt from "bcrypt";
-import { jwtVerify, SignJWT } from "jose";
-import { config } from "dotenv";
 import type { IFunctionReturn } from "../types/types.js";
-
-config();
-const JWT_SECRET = process.env.JWT_SECRET;
+import { createJWT } from "../helpers/auth.helpers.js";
 
 export async function login({
   email,
@@ -16,15 +12,15 @@ export async function login({
   password: string;
 }): Promise<
   IFunctionReturn<{
-    token: string;
+    access: string;
     refresh: string;
     user: { name: string; email: string; id: string };
   } | null>
 > {
   try {
-    const user = await getUser({ email });
+    const user = await getUserByEmail(email);
     if (user.error.isError || !user.data) {
-      throw new Error(user.error.message || "User not found");
+      throw new Error(user.error.message || "Invalid email or password");
     }
     const salt = user.data?.salt;
     const hash = await bcrypt.hash(password, salt!);
@@ -35,26 +31,22 @@ export async function login({
     if (!isValid) {
       throw new Error("Invalid email or password");
     }
-    const token = await new SignJWT({
-      id: user.data._id.toString(),
-      email: user.data.email,
-      name: user.data.name,
-    })
-      .setProtectedHeader({ alg: "HS256" })
-      .setExpirationTime("5min")
-      .sign(new TextEncoder().encode(JWT_SECRET!));
+    const acc = createJWT(
+      { ...user.data, _id: user.data._id.toString() },
+      "access",
+      "10m",
+    );
+    const ref = createJWT(
+      { ...user.data, _id: user.data._id.toString() },
+      "refresh",
+      "7d",
+    );
 
-    const refresh = await new SignJWT({
-      id: user.data._id.toString(),
-      email: user.data.email,
-      name: user.data.name,
-    })
-      .setProtectedHeader({ alg: "HS256" })
-      .setExpirationTime("7 days")
-      .sign(new TextEncoder().encode(JWT_SECRET!));
+    const [access, refresh] = await Promise.all([acc, ref]);
+
     return {
       data: {
-        token,
+        access,
         refresh,
         user: {
           name: user.data.name,
@@ -77,78 +69,6 @@ export async function login({
           error instanceof Error
             ? error.message
             : "An error occurred during login",
-      },
-    };
-  }
-}
-
-export async function verifyToken(
-  token: string,
-): Promise<
-  IFunctionReturn<{ name: string; email: string; id: string } | null>
-> {
-  try {
-    const {
-      payload,
-    }: { payload: { name: string; email: string; id: string } } =
-      await jwtVerify(token, new TextEncoder().encode(JWT_SECRET!));
-    return {
-      data: payload,
-      error: {
-        isError: false,
-        message: "",
-      },
-    };
-  } catch (error) {
-    return {
-      data: null,
-      error: {
-        isError: true,
-        message:
-          error instanceof Error
-            ? error.message
-            : "An error occurred during token verification",
-      },
-    };
-  }
-}
-
-export async function refresh(refresh: string): Promise<
-  IFunctionReturn<{
-    token: string;
-  } | null>
-> {
-  try {
-    const {
-      payload,
-    }: { payload: { name: string; email: string; id: string } } =
-      await jwtVerify(refresh, new TextEncoder().encode(JWT_SECRET!));
-    const token = await new SignJWT({
-      id: payload.id,
-      email: payload.email,
-      name: payload.name,
-    })
-      .setProtectedHeader({ alg: "HS256" })
-      .setExpirationTime("5min")
-      .sign(new TextEncoder().encode(JWT_SECRET!));
-    return {
-      data: {
-        token,
-      },
-      error: {
-        isError: false,
-        message: "",
-      },
-    };
-  } catch (error) {
-    return {
-      data: null,
-      error: {
-        isError: true,
-        message:
-          error instanceof Error
-            ? error.message
-            : "An error occurred during refresh",
       },
     };
   }

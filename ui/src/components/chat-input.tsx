@@ -11,7 +11,7 @@ const ChatInput = ({
   receiverId,
   scrollToBottom,
 }: {
-  activeChatId: string;
+  activeChatId: string | null;
   receiverId: string;
   scrollToBottom: () => void;
 }) => {

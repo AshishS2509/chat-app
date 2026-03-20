@@ -36,11 +36,9 @@ export async function createUser({
   }
 }
 
-export async function getUser({
-  email,
-}: {
-  email: string;
-}): Promise<IFunctionReturn<IUser | null>> {
+export async function getUserByEmail(
+  email: string,
+): Promise<IFunctionReturn<IUser | null>> {
   try {
     const user = await User.findOne({ email }).select("+hash +salt");
     return {

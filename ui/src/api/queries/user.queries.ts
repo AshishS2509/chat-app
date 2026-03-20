@@ -7,7 +7,7 @@ async function getChatList() {
   return data?.data ?? null;
 }
 
-async function getChat(id: string) {
+async function getChat(id: string | null) {
   const data = await api.get<{
     data: IChat;
     error: { isError: boolean; message: string };
@@ -15,7 +15,7 @@ async function getChat(id: string) {
   return data.data;
 }
 
-async function getChatMessages(chatId: string) {
+async function getChatMessages(chatId: string | null) {
   const data = await api.get<{ data: Message[]; results: number }>(
     `messages/${chatId}`,
   );
@@ -29,13 +29,13 @@ export const userQueries = {
       queryKey: [...userQueries.all, "list"] as const,
       queryFn: getChatList,
     }),
-  getChat: (id: string) =>
+  getChat: (id: string | null) =>
     queryOptions({
       queryKey: [...userQueries.all, id],
       queryFn: () => getChat(id),
       enabled: !!id,
     }),
-  fetchMessages: (id: string) =>
+  fetchMessages: (id: string | null) =>
     queryOptions({
       queryKey: [...userQueries.all, "message", id],
       queryFn: () => getChatMessages(id),

@@ -26,7 +26,7 @@ const Index = () => {
           active={currentChat}
         />
       )}
-      {currentChat && isLaptop && <ChatArea currentChatId={currentChat} />}
+      {isLaptop && <ChatArea currentChatId={currentChat} />}
     </div>
   );
 };

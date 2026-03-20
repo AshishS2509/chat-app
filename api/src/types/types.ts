@@ -1,4 +1,5 @@
 import type { Request } from "express";
+import WebSocket from "ws";
 
 export interface IFunctionReturn<d> {
   data: d;
@@ -15,4 +16,15 @@ export interface IRequest<P = null, B = null, Q = null> extends Request<
     email: string;
     id: string;
   };
+}
+
+export interface SocketMeta {
+  id: string;
+  name: string;
+  email: string;
+  [key: string]: any;
+}
+
+export interface AuthedSocket extends WebSocket {
+  meta?: SocketMeta;
 }
