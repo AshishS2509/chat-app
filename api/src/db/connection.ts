@@ -1,20 +1,29 @@
 import mongoose from "mongoose";
-import pino from "pino";
+import { logger } from "../helpers/logger.helper.js";
 
 const mongodbUri = process.env.MONGODB_URI;
-const logger = pino();
+
 if (!mongodbUri) {
   throw new Error("MONGODB_URI environment variable is not defined");
 }
 
-const connectDB = async (): Promise<void> => {
+export const connectDB = async (): Promise<void> => {
   try {
     await mongoose.connect(mongodbUri, {
       dbName: "chat-app",
     });
-    logger.info("MongoDB connected successfully");
+    logger.info("MongoDB connected");
   } catch (error) {
-    console.error("MongoDB connection failed:", error);
+    logger.error(error);
+    process.exit(1);
+  }
+};
+
+export const disconnect = async (): Promise<void> => {
+  try {
+    mongoose.disconnect();
+  } catch (error) {
+    logger.error(error);
     process.exit(1);
   }
 };
@@ -26,5 +35,3 @@ mongoose.connection.on("disconnected", () => {
 mongoose.connection.on("error", (error) => {
   logger.error("MongoDB connection error:", error);
 });
-
-export default connectDB;

@@ -1,8 +1,13 @@
 import type { IncomingMessage } from "node:http";
-import type { AuthedSocket } from "../types/types.js";
+import type { AuthedSocket, WSS } from "../types/types.js";
 import { verifyToken } from "../helpers/auth.helpers.js";
+import { logger } from "../helpers/logger.helper.js";
 
-export async function onConnection(socket: AuthedSocket, req: IncomingMessage) {
+export async function onConnection(
+  socket: AuthedSocket,
+  req: IncomingMessage,
+  wss: WSS,
+) {
   try {
     const url = new URL(req.url!, "http://localhost");
     const token = url.searchParams.get("token");
@@ -13,10 +18,11 @@ export async function onConnection(socket: AuthedSocket, req: IncomingMessage) {
 
     if (!data || error?.isError) throw new Error("Unauthorized");
 
+    wss.connections?.set(data.id, socket);
     socket.meta = { ...data };
-    console.log("Client Connected: ", socket.meta.id);
+    logger.info("Client Connected: " + socket.meta.id);
   } catch (error: any) {
-    console.error(error.message);
+    logger.error(error.message);
 
     socket.close(
       1008,

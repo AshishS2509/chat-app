@@ -12,7 +12,7 @@ export async function createJWT(
   exp: string,
 ) {
   return await new SignJWT({
-    id: user._id,
+    id: user._id.toString(),
     email: user.email,
     name: user.name,
     scope: scope,
@@ -30,7 +30,7 @@ export async function verifyToken(
   try {
     const {
       payload,
-    }: { payload: { name: string; email: string; id: string } } =
+    }: { payload: { name: string; email: string; id: string; scope: Scope } } =
       await jwtVerify(token, new TextEncoder().encode(JWT_SECRET!));
     return {
       data: payload,

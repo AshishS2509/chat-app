@@ -18,17 +18,17 @@ const auth = Router();
 auth.post(
   "/register",
   validator({ body: registerSchema }),
-  async (req: IRequest<null, TRegister>, res: Response) => {
+  async (req: IRequest<null, TRegister>, res: Response, next) => {
     const { name, email, password } = req.body;
 
     const { error } = await createUser({ name, email, password });
     if (error.isError) {
-      return res.status(400).json({ error: error.message });
+      return next(new Error(error.message));
     }
 
     const { data, error: loginError } = await login({ email, password });
     if (loginError.isError) {
-      return res.status(400).json({ error: error.message });
+      return next(new Error(error.message));
     }
 
     return res
@@ -41,11 +41,11 @@ auth.post(
 auth.post(
   "/login",
   validator({ body: loginSchema }),
-  async (req: IRequest<null, TLogin>, res: Response) => {
+  async (req: IRequest<null, TLogin>, res: Response, next) => {
     const { email, password } = req.body;
     const { data, error } = await login({ email, password });
     if (error.isError) {
-      return res.status(400).json({ error: error.message });
+      return next(new Error(error.message));
     }
     return res
       .status(200)
@@ -57,11 +57,11 @@ auth.post(
 auth.post(
   "/refresh",
   validator({ body: refreshSchema }),
-  async (req: IRequest<null, TRefresh>, res: Response) => {
+  async (req: IRequest<null, TRefresh>, res: Response, next) => {
     const { refreshToken } = req.body;
     const { data, error } = await refresh(refreshToken);
     if (error.isError) {
-      return res.status(400).json({ error: error.message });
+      return next(new Error(error.message));
     }
     return res
       .status(200)

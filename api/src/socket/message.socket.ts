@@ -1,19 +1,19 @@
-import type WebSocket from "ws";
 import { createMessage } from "../controller/message.controller.js";
 import type {
   AuthedSocket,
   TChatParams,
   TMessage,
   TMessageParams,
+  WSS,
 } from "../types/types.js";
-import type { WebSocketServer } from "ws";
 import { addUserToChat } from "../controller/chat.controller.js";
 import { getUserByEmail } from "../controller/user.controller.js";
+import { logger } from "../helpers/logger.helper.js";
 
 async function sendMessageHandler(
   message: TMessageParams,
   userId: string,
-  clients: WebSocketServer["clients"],
+  wss: WSS,
 ) {
   const chatId = message.chatId;
   const receiverId = message.receiverId;
@@ -24,23 +24,18 @@ async function sendMessageHandler(
     chatId,
     text,
   });
-  clients.forEach((cli: AuthedSocket) => {
-    console.log(cli.meta?.id, receiverId);
-    if (cli.meta?.id === receiverId)
-      cli.send(
-        JSON.stringify({
-          type: "SEND_MESSAGE",
-          data: data.data?.toJSON(),
-        }),
-      );
-  });
-  console.log(`User ${userId} sent message to chat ${chatId} : ${text}`);
+  wss.connections?.get(receiverId)?.send(
+    JSON.stringify({
+      type: "SEND_MESSAGE",
+      data: data.data,
+    }),
+  );
 }
 
 async function newChatHandler(
   message: TChatParams,
   socket: AuthedSocket,
-  clients: WebSocketServer["clients"],
+  wss: WSS,
 ) {
   const user = await getUserByEmail(message.email);
   if (!user.data) throw Error("No user found!");
@@ -66,48 +61,32 @@ async function newChatHandler(
   socket.send(
     JSON.stringify({
       type: "NEW_CHAT",
-      data: {
-        ...data.data?.toJSON(),
-        participants: data.data?.participants.filter(
-          (p) => p.userId !== socket.meta?.id,
-        )[0],
-      },
+      data: data.data,
     }),
   );
-  clients.forEach((cli: AuthedSocket) => {
-    if (cli.meta?.id === user.data?._id.toString()) {
-      cli.send(
-        JSON.stringify({
-          type: "NEW_CHAT",
-          data: {
-            ...data.data?.toJSON(),
-            participants: data.data?.participants.filter(
-              (p) => p.userId === socket.meta?.id,
-            )[0],
-          },
-        }),
-      );
-    }
-  });
+  wss.connections?.get(user.data?._id.toString())?.send(
+    JSON.stringify({
+      type: "NEW_CHAT",
+      data: data.data,
+    }),
+  );
 }
 
 export async function onMessage(
   socket: AuthedSocket,
-  clients: WebSocketServer["clients"],
-  raw: WebSocket.RawData,
+  message: TMessage,
+  wss: WSS,
 ) {
   try {
     if (!socket.meta) throw Error("Unauthorized");
 
-    const message: TMessage = JSON.parse(raw.toString());
-
     if (message.type === "SEND_MESSAGE") {
-      await sendMessageHandler(message.data, socket.meta.id, clients);
+      await sendMessageHandler(message.data, socket.meta.id, wss);
     } else if (message.type === "NEW_CHAT") {
-      await newChatHandler(message.data, socket, clients);
+      await newChatHandler(message.data, socket, wss);
     }
   } catch (err: any) {
-    console.error("Invalid WS message:", err.message);
+    logger.error(err.message);
     socket.close(
       1008,
       JSON.stringify({

@@ -78,7 +78,6 @@ export async function addUserToChat({
       },
     };
   } catch (error) {
-    console.error(`Error adding user to chat for user ${userId}:`, error);
     return {
       data: null,
       error: {
