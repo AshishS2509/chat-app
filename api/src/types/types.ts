@@ -1,4 +1,5 @@
 import type { Request } from "express";
+import type pino from "pino";
 import WebSocket from "ws";
 
 export interface IFunctionReturn<d> {
@@ -12,6 +13,7 @@ export interface IRequest<P = null, B = null, Q = null> extends Request<
   B,
   Q
 > {
+  log?: pino.BaseLogger;
   meta?: {
     email: string;
     id: string;
@@ -28,3 +30,16 @@ export interface SocketMeta {
 export interface AuthedSocket extends WebSocket {
   meta?: SocketMeta;
 }
+
+export type Scope = "access" | "refresh";
+
+export type TMessageParams = {
+  chatId: string;
+  receiverId: string;
+  text: string;
+  id: string;
+};
+export type TChatParams = { email: string };
+export type TMessage =
+  | { type: "SEND_MESSAGE"; data: TMessageParams }
+  | { type: "NEW_CHAT"; data: TChatParams };

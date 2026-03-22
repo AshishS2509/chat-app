@@ -16,10 +16,10 @@ chats.get("/:id", async (req: IRequest<{ id: string }>, res: Response) => {
   const userId = req.meta?.id;
   const chatId = req.params.id;
   if (!userId || !chatId) return res.status(401).end();
-  const chat = await getChat(chatId, userId);
+  const chat = await getChat(chatId);
   if (chat.error.isError)
     return res.status(404).json({ error: chat.error }).end();
-  res.json({ data: chat.data }).end();
+  return res.json({ data: chat.data }).end();
 });
 
 export default chats;

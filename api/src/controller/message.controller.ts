@@ -1,7 +1,8 @@
-import { Message } from "../db/message.schema.js";
+import { Message, type IMessage } from "../db/message.schema.js";
+import type { IFunctionReturn } from "../types/types.js";
 import { getChat } from "./chat.controller.js";
 
-export async function sendMessage({
+export async function createMessage({
   userId,
   chatId,
   text,
@@ -9,9 +10,9 @@ export async function sendMessage({
   userId: string;
   chatId: string;
   text: string;
-}) {
+}): Promise<IFunctionReturn<IMessage | null>> {
   try {
-    const chat = await getChat(chatId, userId);
+    const chat = await getChat(chatId);
     if (chat.error.isError || !chat.data) throw Error("Chat not found");
     const sender = userId;
 
@@ -40,7 +41,9 @@ export async function sendMessage({
   }
 }
 
-export async function getMesages(chatId: string) {
+export async function getMesages(
+  chatId: string,
+): Promise<IFunctionReturn<IMessage[] | null>> {
   try {
     const messages = await Message.find({ chatId }, null, {
       sort: "timestamp",

@@ -1,27 +1,19 @@
 import { Chat, type IChat } from "../db/chat.schema.js";
 import type { IFunctionReturn } from "../types/types.js";
 
-export async function getChats(userId: string) {
+export async function getChats(
+  userId: string,
+): Promise<IFunctionReturn<IChat[] | null>> {
   try {
-    const chats = await Chat.aggregate([
-      { $match: { "participants.userId": userId } },
-      {
-        $addFields: {
-          participants: {
-            $filter: {
-              input: "$participants",
-              as: "participant",
-              cond: { $ne: ["$$participant.userId", userId] },
-            },
-          },
-        },
-      },
-      { $unwind: "$participants" },
-      { $sort: { createdAt: -1 } },
-    ]);
+    const chats = await Chat.find({ "participants.userId": userId }, null, {
+      sort: "-createdAt",
+    });
     return {
       data: chats,
-      results: chats.length,
+      error: {
+        isError: false,
+        message: "",
+      },
     };
   } catch (error: any) {
     return {
@@ -34,19 +26,16 @@ export async function getChats(userId: string) {
   }
 }
 
-export async function getChat(id: string, userId: string) {
+export async function getChat(
+  id: string,
+): Promise<IFunctionReturn<IChat | null>> {
   try {
     const data = await Chat.findById(id).lean();
 
     if (!data) throw Error("No record found");
 
-    const chat = {
-      ...data,
-      participants: data.participants.find((p) => p.userId !== userId),
-    };
-
     return {
-      data: chat,
+      data,
       error: {
         isError: false,
         message: "",

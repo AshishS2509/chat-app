@@ -31,16 +31,8 @@ export async function login({
     if (!isValid) {
       throw new Error("Invalid email or password");
     }
-    const acc = createJWT(
-      { ...user.data, _id: user.data._id.toString() },
-      "access",
-      "10m",
-    );
-    const ref = createJWT(
-      { ...user.data, _id: user.data._id.toString() },
-      "refresh",
-      "7d",
-    );
+    const acc = createJWT(user.data.toJSON(), "access", "10min");
+    const ref = createJWT(user.data.toJSON(), "refresh", "7d");
 
     const [access, refresh] = await Promise.all([acc, ref]);
 

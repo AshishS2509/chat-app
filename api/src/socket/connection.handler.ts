@@ -1,7 +1,6 @@
 import type { IncomingMessage } from "node:http";
-import { verifyToken } from "../controller/auth.controller.js";
-import { getChats } from "../controller/chat.controller.js";
-import type { AuthedSocket, IRequest } from "../types/types.js";
+import type { AuthedSocket } from "../types/types.js";
+import { verifyToken } from "../helpers/auth.helpers.js";
 
 export async function onConnection(socket: AuthedSocket, req: IncomingMessage) {
   try {
@@ -12,13 +11,9 @@ export async function onConnection(socket: AuthedSocket, req: IncomingMessage) {
 
     const { data, error } = await verifyToken(token);
 
-    if (!data || error?.isError) {
-      throw new Error("Unauthorized");
-    }
+    if (!data || error?.isError) throw new Error("Unauthorized");
 
-    socket.meta = {
-      ...data,
-    };
+    socket.meta = { ...data };
     console.log("Client Connected: ", socket.meta.id);
   } catch (error: any) {
     console.error(error.message);

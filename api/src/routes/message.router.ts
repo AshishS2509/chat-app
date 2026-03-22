@@ -9,8 +9,8 @@ message.get("/:id", async (req: IRequest<{ id: string }>, res: Response) => {
 
   const data = await getMesages(chatId);
 
-  if (data.error.isError) res.status(400).json(data).end();
-  res.json(data).end();
+  if (data.error.isError) return res.status(400).json(data).end();
+  return res.json(data).end();
 });
 
 export default message;

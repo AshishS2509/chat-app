@@ -2,16 +2,22 @@ import { Router, type Response } from "express";
 import type { IRequest } from "../types/types.js";
 import { createUser } from "../controller/user.controller.js";
 import { login } from "../controller/auth.controller.js";
-import { refresh } from "../middlewares/auth.middleware.js";
-
-type TRegister = { name: string; email: string; password: string };
-type TLogin = { email: string; password: string };
-type TRefresh = { refreshToken: string };
+import { refresh } from "../helpers/auth.helpers.js";
+import {
+  loginSchema,
+  refreshSchema,
+  registerSchema,
+  type TLogin,
+  type TRefresh,
+  type TRegister,
+} from "../types/auth.types.js";
+import { validator } from "../middlewares/validator.middleware.js";
 
 const auth = Router();
 
 auth.post(
   "/register",
+  validator({ body: registerSchema }),
   async (req: IRequest<null, TRegister>, res: Response) => {
     const { name, email, password } = req.body;
 
@@ -25,35 +31,43 @@ auth.post(
       return res.status(400).json({ error: error.message });
     }
 
-    res
+    return res
       .status(200)
       .json({ ...data })
       .end();
   },
 );
 
-auth.post("/login", async (req: IRequest<null, TLogin>, res: Response) => {
-  const { email, password } = req.body;
-  const { data, error } = await login({ email, password });
-  if (error.isError) {
-    return res.status(400).json({ error: error.message });
-  }
-  res
-    .status(200)
-    .json({ ...data })
-    .end();
-});
+auth.post(
+  "/login",
+  validator({ body: loginSchema }),
+  async (req: IRequest<null, TLogin>, res: Response) => {
+    const { email, password } = req.body;
+    const { data, error } = await login({ email, password });
+    if (error.isError) {
+      return res.status(400).json({ error: error.message });
+    }
+    return res
+      .status(200)
+      .json({ ...data })
+      .end();
+  },
+);
 
-auth.post("/refresh", async (req: IRequest<null, TRefresh>, res: Response) => {
-  const { refreshToken } = req.body;
-  const { data, error } = await refresh(refreshToken);
-  if (error.isError) {
-    return res.status(400).json({ error: error.message });
-  }
-  res
-    .status(200)
-    .json({ ...data })
-    .end();
-});
+auth.post(
+  "/refresh",
+  validator({ body: refreshSchema }),
+  async (req: IRequest<null, TRefresh>, res: Response) => {
+    const { refreshToken } = req.body;
+    const { data, error } = await refresh(refreshToken);
+    if (error.isError) {
+      return res.status(400).json({ error: error.message });
+    }
+    return res
+      .status(200)
+      .json({ ...data })
+      .end();
+  },
+);
 
 export default auth;
