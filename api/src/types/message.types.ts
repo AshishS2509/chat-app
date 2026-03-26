@@ -1,3 +1,5 @@
 import z from "zod";
 
-export const messagesById = z.object({ id: z.string() });
+export const messagesByIdSchema = z.object({ id: z.string() });
+
+export type TMessagesById = z.infer<typeof messagesByIdSchema>;

@@ -1,14 +1,14 @@
 import { createMessage } from "../controller/message.controller.js";
-import type {
-  AuthedSocket,
-  TChatParams,
-  TMessage,
-  TMessageParams,
-  WSS,
-} from "../types/types.js";
+import type { AuthedSocket, WSS } from "../types/types.js";
 import { addUserToChat } from "../controller/chat.controller.js";
 import { getUserByEmail } from "../controller/user.controller.js";
 import { logger } from "../helpers/logger.helper.js";
+import type {
+  TChatParams,
+  TMessage,
+  TMessageParams,
+} from "../types/socket.types.js";
+import { safeClose, safeSend } from "./ws.utils.js";
 
 async function sendMessageHandler(
   message: TMessageParams,
@@ -24,12 +24,14 @@ async function sendMessageHandler(
     chatId,
     text,
   });
-  wss.connections?.get(receiverId)?.send(
-    JSON.stringify({
-      type: "SEND_MESSAGE",
-      data: data.data,
-    }),
-  );
+
+  const receiverSocket = wss.connections.get(receiverId);
+  if (!receiverSocket) return;
+
+  safeSend(receiverSocket, {
+    type: "SEND_MESSAGE",
+    data: data.data,
+  });
 }
 
 async function newChatHandler(
@@ -56,20 +58,22 @@ async function newChatHandler(
     userId: socket.meta?.id ?? "",
   });
   if (data.error.isError) {
-    socket.send(JSON.stringify({ error: "Error Adding user to chat." }));
+    safeSend(socket, { error: "Error Adding user to chat." });
+    return;
   }
-  socket.send(
-    JSON.stringify({
-      type: "NEW_CHAT",
-      data: data.data,
-    }),
-  );
-  wss.connections?.get(user.data?._id.toString())?.send(
-    JSON.stringify({
-      type: "NEW_CHAT",
-      data: data.data,
-    }),
-  );
+
+  safeSend(socket, {
+    type: "NEW_CHAT",
+    data: data.data,
+  });
+
+  const invitedUserSocket = wss.connections.get(user.data._id.toString());
+  if (!invitedUserSocket) return;
+
+  safeSend(invitedUserSocket, {
+    type: "NEW_CHAT",
+    data: data.data,
+  });
 }
 
 export async function onMessage(
@@ -78,23 +82,29 @@ export async function onMessage(
   wss: WSS,
 ) {
   try {
-    if (!socket.meta) throw Error("Unauthorized");
+    if (!socket.meta) throw new Error("Unauthorized");
 
-    if (message.type === "SEND_MESSAGE") {
-      await sendMessageHandler(message.data, socket.meta.id, wss);
-    } else if (message.type === "NEW_CHAT") {
-      await newChatHandler(message.data, socket, wss);
+    switch (message.type) {
+      case "SEND_MESSAGE":
+        await sendMessageHandler(message.data, socket.meta.id, wss);
+        break;
+      case "NEW_CHAT":
+        await newChatHandler(message.data, socket, wss);
+        break;
+      default: {
+        const unreachable: never = message;
+        throw new Error(`Unsupported message type: ${String(unreachable)}`);
+      }
     }
-  } catch (err: any) {
-    logger.error(err.message);
-    socket.close(
-      1008,
-      JSON.stringify({
-        error: {
-          isError: true,
-          message: err?.message || "Unhandled Exception",
-        },
-      }),
-    );
+  } catch (error) {
+    const messageText =
+      error instanceof Error ? error.message : "Unhandled Exception";
+    logger.error(messageText);
+    safeClose(socket, 1008, {
+      error: {
+        isError: true,
+        message: messageText,
+      },
+    });
   }
 }

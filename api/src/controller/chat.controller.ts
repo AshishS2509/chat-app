@@ -1,13 +1,28 @@
 import { Chat, type IChat } from "../db/chat.schema.js";
 import type { IFunctionReturn } from "../types/types.js";
+import { Types } from "mongoose";
+
+function buildParticipantKey(userIds: string[]): string {
+  return [...userIds].sort().join(":");
+}
 
 export async function getChats(
   userId: string,
 ): Promise<IFunctionReturn<IChat[] | null>> {
   try {
-    const chats = await Chat.find({ "participants.userId": userId }, null, {
-      sort: "-createdAt",
-    });
+    const userObjectId = new Types.ObjectId(userId);
+    const chats = await Chat.find(
+      {
+        $or: [
+          { "participants.userId": userObjectId },
+          { "participants.userIdLegacy": userId },
+        ],
+      },
+      null,
+      {
+        sort: "-updatedAt",
+      },
+    );
     return {
       data: chats,
       error: {
@@ -60,13 +75,34 @@ export async function addUserToChat({
   userId: string;
 }): Promise<IFunctionReturn<IChat | null>> {
   try {
-    if (data.length < 2) throw Error("2 users required for chat");
+    if (data.length !== 2) throw Error("2 users required for chat");
+    const participantIds = data.map((d) => d.userId);
+    const participantKey = buildParticipantKey(participantIds);
+
+    const existing = await Chat.findOne({ participantKey });
+    if (existing) {
+      return {
+        data: existing,
+        error: {
+          isError: false,
+          message: "",
+        },
+      };
+    }
+
     const chat = await Chat.create({
-      participants: data,
+      participants: data.map((participant) => ({
+        userId: new Types.ObjectId(participant.userId),
+        userIdLegacy: participant.userId,
+        name: participant.name,
+        email: participant.email,
+      })),
+      participantKey,
       lastMessage: {
-        sender: userId,
+        sender: new Types.ObjectId(userId),
+        senderLegacy: userId,
         text: "",
-        time: Date.now(),
+        at: new Date(),
       },
       unread: 0,
     });

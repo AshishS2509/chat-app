@@ -2,14 +2,17 @@ import { Router, type Response } from "express";
 import type { IRequest } from "../types/types.js";
 import { getMesages } from "../controller/message.controller.js";
 import { validator } from "../middlewares/validator.middleware.js";
-import { messagesById } from "../types/message.types.js";
+import {
+  messagesByIdSchema,
+  type TMessagesById,
+} from "../types/message.types.js";
 
 const message = Router();
 
 message.get(
   "/:id",
-  validator({ params: messagesById }),
-  async (req: IRequest<{ id: string }>, res: Response, next) => {
+  validator({ params: messagesByIdSchema }),
+  async (req: IRequest<TMessagesById>, res: Response, next) => {
     const chatId = req.params.id;
     const data = await getMesages(chatId);
     if (data.error.isError) return next(new Error(data.error.message));

@@ -15,7 +15,6 @@ const UserSchema = new Schema<IUser>(
       type: String,
       required: true,
       unique: true,
-      index: true,
       lowercase: true,
       trim: true,
     },
@@ -25,8 +24,17 @@ const UserSchema = new Schema<IUser>(
   },
   {
     timestamps: true,
+    versionKey: false,
+    toJSON: {
+      virtuals: true,
+      transform: (_doc, ret: Record<string, unknown>) => {
+        ret.id = String(ret._id);
+        delete ret._id;
+      },
+    },
   },
 );
 
 export const User: Model<IUser> =
-  mongoose.models.User || mongoose.model<IUser>("users", UserSchema);
+  (mongoose.models.users as Model<IUser> | undefined) ||
+  mongoose.model<IUser>("users", UserSchema);

@@ -1,12 +1,14 @@
 import type WebSocket from "ws";
-import type { TMessage } from "../types/types.js";
+import { MessageSchema, type TMessage } from "../types/socket.types.js";
 
 export function parseMessage(
   raw: WebSocket.RawData,
 ): TMessage | "INVALID_DATA" {
-  const str = raw.toString();
   try {
-    return JSON.parse(str);
+    const str = raw.toString();
+    const data = JSON.parse(str);
+    const result = MessageSchema.parse(data);
+    return result;
   } catch {
     return "INVALID_DATA";
   }

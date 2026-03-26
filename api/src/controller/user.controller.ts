@@ -40,7 +40,8 @@ export async function getUserByEmail(
   email: string,
 ): Promise<IFunctionReturn<IUser | null>> {
   try {
-    const user = await User.findOne({ email }).select("+hash +salt");
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail }).select("+hash +salt");
     return {
       data: user,
       error: {

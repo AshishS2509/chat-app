@@ -2,7 +2,7 @@ import { Router, type Response } from "express";
 import type { IRequest } from "../types/types.js";
 import { getChat, getChats } from "../controller/chat.controller.js";
 import { validator } from "../middlewares/validator.middleware.js";
-import { chatById } from "../types/chat.types.js";
+import { chatByIdSchema, type TChatById } from "../types/chat.types.js";
 
 const chats = Router();
 
@@ -16,8 +16,8 @@ chats.get("/list", async (req: IRequest, res: Response, next) => {
 
 chats.get(
   "/:id",
-  validator({ params: chatById }),
-  async (req: IRequest<{ id: string }>, res: Response, next) => {
+  validator({ params: chatByIdSchema }),
+  async (req: IRequest<TChatById>, res: Response, next) => {
     const userId = req.meta?.id;
     const chatId = req.params.id;
     if (!userId || !chatId) return next(new Error("id is required"));

@@ -1,6 +1,8 @@
 import { Message, type IMessage } from "../db/message.schema.js";
+import { Chat } from "../db/chat.schema.js";
 import type { IFunctionReturn } from "../types/types.js";
 import { getChat } from "./chat.controller.js";
+import mongoose, { Types } from "mongoose";
 
 export async function createMessage({
   userId,
@@ -11,20 +13,51 @@ export async function createMessage({
   chatId: string;
   text: string;
 }): Promise<IFunctionReturn<IMessage | null>> {
+  const session = await mongoose.startSession();
   try {
     const chat = await getChat(chatId);
     if (chat.error.isError || !chat.data) throw Error("Chat not found");
-    const sender = userId;
+    const sender = new Types.ObjectId(userId);
+    const chatObjectId = new Types.ObjectId(chat.data._id.toString());
 
-    const data = await Message.create({
-      chatId: chat.data._id.toString(),
-      senderId: sender,
-      text,
-      timestamp: Date.now(),
+    let createdMessage: IMessage | null = null;
+
+    await session.withTransaction(async () => {
+      const created = await Message.create(
+        [
+          {
+            chatId: chatObjectId,
+            senderId: sender,
+            chatIdLegacy: chat.data!._id.toString(),
+            senderIdLegacy: userId,
+            text,
+          },
+        ],
+        { session },
+      );
+
+      createdMessage = created[0] ?? null;
+      if (!createdMessage) throw new Error("Unable to create message");
+
+      await Chat.updateOne(
+        { _id: chatObjectId },
+        {
+          $set: {
+            lastMessage: {
+              sender,
+              senderLegacy: userId,
+              text,
+              at: new Date(),
+            },
+            updatedAt: new Date(),
+          },
+        },
+        { session },
+      );
     });
 
     return {
-      data,
+      data: createdMessage,
       error: {
         isError: false,
         message: "",
@@ -38,6 +71,8 @@ export async function createMessage({
         message: "message" in error ? error.message : "DB Error",
       },
     };
+  } finally {
+    await session.endSession();
   }
 }
 
@@ -45,10 +80,17 @@ export async function getMesages(
   chatId: string,
 ): Promise<IFunctionReturn<IMessage[] | null>> {
   try {
-    const messages = await Message.find({ chatId }, null, {
-      sort: "timestamp",
+    const chatObjectId = new Types.ObjectId(chatId);
+    const messages = await Message.find(
+      {
+        $or: [{ chatId: chatObjectId }, { chatIdLegacy: chatId }],
+      },
+      null,
+      {
+      sort: "-createdAt",
       limit: 100,
-    });
+      },
+    );
     return {
       data: messages,
       error: {

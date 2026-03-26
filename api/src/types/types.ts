@@ -33,17 +33,6 @@ export interface AuthedSocket extends WebSocket {
 
 export type Scope = "access" | "refresh";
 
-export type TMessageParams = {
-  chatId: string;
-  receiverId: string;
-  text: string;
-  id: string;
-};
-export type TChatParams = { email: string };
-export type TMessage =
-  | { type: "SEND_MESSAGE"; data: TMessageParams }
-  | { type: "NEW_CHAT"; data: TChatParams };
-
 export interface WSS extends WebSocketServer {
-  connections?: Map<string, AuthedSocket>;
+  connections: Map<string, AuthedSocket>;
 }
